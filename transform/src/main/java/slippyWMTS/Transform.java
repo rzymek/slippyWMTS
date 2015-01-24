@@ -1,25 +1,48 @@
 package slippyWMTS;
 
+import java.util.regex.Pattern;
+
 import slippyWMTS.area.TileBox;
-import slippyWMTS.capabilities.WmtsTileMatrix;
-import slippyWMTS.capabilities.WmtsTileMatrixSet;
+import slippyWMTS.capabilities.xml.Capabilities.TileMatrix;
+import slippyWMTS.capabilities.xml.Capabilities.TileMatrixSet;
 import slippyWMTS.position.DoubleXY;
 import slippyWMTS.position.LonLat;
 import slippyWMTS.tile.SlippyTile;
 import slippyWMTS.tile.WmtsTile;
 
 public class Transform {
-  private final WmtsTileMatrixSet tileMatrixSet;
+  private static final Pattern CRS_EPGS4326 = Pattern.compile("urn:ogc:def:crs:EPSG:.*:4326");
 
-  public Transform(WmtsTileMatrixSet tileMatrixSet) {
-    super();
+  private final TileMatrixSet tileMatrixSet;
+  private final double metersPerUnit;
+  private final boolean using4326;
+
+  public Transform(TileMatrixSet tileMatrixSet) {
     this.tileMatrixSet = tileMatrixSet;
+    using4326 = CRS_EPGS4326.matcher(tileMatrixSet.SupportedCRS).matches();
+    metersPerUnit = getMetersPerUnit(tileMatrixSet.SupportedCRS);
+  }
+
+  protected double getMetersPerUnit(String crs) {
+    if (using4326) {
+      double R = 6371 * 1000; // meteres
+      double dLat = Math.toRadians(1);
+      double a = Math.sin(dLat / 2.0) * Math.sin(dLat / 2.0);
+      double c = 2.0 * Math.atan2(Math.sqrt(a), Math.sqrt(1.0 - a));
+      return R * c;
+    } else {
+      if (crs.matches(".*EPSG:.*:2180")) {
+        return 1;
+      } else {
+        throw new IllegalArgumentException("Don't know how many meters per unit in " + crs);
+      }
+    }
   }
 
   public TileTranformation transformAndCrop(SlippyTile tile) {
     TileBox<WmtsTile> wmtsBox = transform(tile);
     int wmtsZ = wmtsBox.topLeft.z;
-    WmtsTileMatrix tileMatrix = tileMatrixSet.getTileMatrixForZ(wmtsZ);
+    TileMatrix tileMatrix = tileMatrixSet.TileMatrix[wmtsZ];
 
     TileBox<DoubleXY> cropBox = new TileBox<DoubleXY>();
     cropBox.topLeft = getPixel(wmtsBox.topLeft, wmtsBox.topLeft, tileMatrix);
@@ -33,10 +56,10 @@ public class Transform {
     return tranformation;
   }
 
-  private DoubleXY getPixel(WmtsTile topLeft, WmtsTile tile, WmtsTileMatrix tileMatrix) {
+  private DoubleXY getPixel(WmtsTile topLeft, WmtsTile tile, TileMatrix tileMatrix) {
     DoubleXY pixel = new DoubleXY();
-    pixel.x = (tile.x - topLeft.getX()) * tileMatrix.tileWidth;
-    pixel.y = (tile.y - topLeft.getY()) * tileMatrix.tileHeight;
+    pixel.x = (tile.x - topLeft.getX()) * tileMatrix.TileWidth;
+    pixel.y = (tile.y - topLeft.getY()) * tileMatrix.TileHeight;
     return pixel;
   }
 
@@ -71,18 +94,31 @@ public class Transform {
     double x = topLeft.getLon();
     double y = topLeft.getLat();
 
-    WmtsTileMatrix tileMatrix = tileMatrixSet.getTileMatrixForZ(wmtsZ);
+    TileMatrix tileMatrix = tileMatrixSet.TileMatrix[wmtsZ];
 
-    double pixelSpan = tileMatrix.scaleDenominator * 0.28e-3 / tileMatrixSet.metersPerUnit;
+    double pixelSpan = tileMatrix.ScaleDenominator * 0.28e-3 / metersPerUnit;
 
-    double tileSpanX = (tileMatrix.tileWidth * pixelSpan);
-    double tileSpanY = (tileMatrix.tileHeight * pixelSpan);
-    double tileMatrixMinX = tileMatrix.topLeftCorner.x;
-    double tileMatrixMaxY = tileMatrix.topLeftCorner.y;
+    double tileSpanX = (tileMatrix.TileWidth * pixelSpan);
+    double tileSpanY = (tileMatrix.TileHeight * pixelSpan);
+    LonLat topLeftCorner = translateToLonLat(tileMatrix.TopLeftCorner);
+    double tileMatrixMinX = topLeftCorner.x;
+    double tileMatrixMaxY = topLeftCorner.y;
 
     double col = (x - tileMatrixMinX) / tileSpanX;
     double row = (tileMatrixMaxY - y) / tileSpanY;
     return new WmtsTile(col, row, wmtsZ);
+  }
+
+  private LonLat translateToLonLat(double[] coordinates) {
+    return translateToLonLat(coordinates[1], coordinates[0]);
+  }
+
+  protected LonLat translateToLonLat(double x, double y) {
+    if (using4326) {
+      return new LonLat(x, y);
+    } else {
+      throw new RuntimeException("Not implemented: translation to EPSG:4326 from "+tileMatrixSet.SupportedCRS);
+    }
   }
 
   protected static int getWmtsZ(SlippyTile tile) {

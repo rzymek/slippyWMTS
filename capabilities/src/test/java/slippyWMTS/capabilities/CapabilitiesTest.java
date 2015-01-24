@@ -45,6 +45,6 @@ public class CapabilitiesTest {
     Capabilities capabilites = (Capabilities) jaxb.unmarshal(in);
     printXML(capabilites);
     assertEquals("EPSG:2180", capabilites.Contents.Layer.TileMatrixSetLink[0].TileMatrixSet);
-    assertEquals(100000.0, capabilites.Contents.TileMatrixSet[0].TileMatrix.TopLeftCorner[1], 0.0);
+    assertEquals(12.0, capabilites.Contents.TileMatrixSet[1].TileMatrix[12].TopLeftCorner[1], 0.0);
   }
 }

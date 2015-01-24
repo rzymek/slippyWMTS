@@ -23,6 +23,11 @@ class TileProcessor {
     // TODO Auto-generated method stub
     return null;
   }
+
+  public void register(String string, String string2) {
+    // TODO Auto-generated method stub
+    
+  }
   
 }
 public class TileServlet extends HttpServlet {
@@ -30,6 +35,10 @@ public class TileServlet extends HttpServlet {
   private static final long serialVersionUID = 1L;
 
   private TileProcessor tileProcessor;
+  
+  public void init() {
+    tileProcessor.register("topo","http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/TOPO");
+  }
   
   @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {

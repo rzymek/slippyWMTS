@@ -2,7 +2,7 @@ package slippyWMTS.position;
 
 public class LonLat extends DoubleXY {
 
-  public LonLat(int lon, int lat) {
+  public LonLat(double lon, double lat) {
     setLon(lon);
     setLat(lat);
   }
