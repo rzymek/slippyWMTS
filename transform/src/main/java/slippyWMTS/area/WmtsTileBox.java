@@ -1,4 +1,4 @@
-package slippy.wmts.area;
+package slippyWMTS.area;
 
 public class WmtsTileBox {
 

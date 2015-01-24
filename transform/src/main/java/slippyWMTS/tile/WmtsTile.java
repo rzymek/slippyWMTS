@@ -1,4 +1,4 @@
-package slippy.wmts.tile;
+package slippyWMTS.tile;
 
 public class WmtsTile extends DoubleTile {
 

@@ -1,6 +1,6 @@
-package slippy.wmts.capabilities;
+package slippyWMTS.capabilities;
 
-import slippy.wmts.position.DoubleXY;
+import slippyWMTS.position.LonLat;
 
 public class WmtsTileMatrix {
 
@@ -9,6 +9,6 @@ public class WmtsTileMatrix {
 //  public int matrixHeight;
   public double tileWidth;
   public double tileHeight;
-  public DoubleXY topLeftCorner;
+  public LonLat topLeftCorner;
 
 }

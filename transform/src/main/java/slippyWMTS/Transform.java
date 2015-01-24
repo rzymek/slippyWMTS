@@ -1,15 +1,20 @@
-package slippy.wmts;
+package slippyWMTS;
 
-import slippy.wmts.area.TileBox;
-import slippy.wmts.capabilities.WmtsTileMatrix;
-import slippy.wmts.capabilities.WmtsTileMatrixSet;
-import slippy.wmts.position.DoubleXY;
-import slippy.wmts.position.LonLat;
-import slippy.wmts.tile.SlippyTile;
-import slippy.wmts.tile.WmtsTile;
+import slippyWMTS.area.TileBox;
+import slippyWMTS.capabilities.WmtsTileMatrix;
+import slippyWMTS.capabilities.WmtsTileMatrixSet;
+import slippyWMTS.position.DoubleXY;
+import slippyWMTS.position.LonLat;
+import slippyWMTS.tile.SlippyTile;
+import slippyWMTS.tile.WmtsTile;
 
 public class Transform {
-  private WmtsTileMatrixSet tileMatrixSet;
+  private final WmtsTileMatrixSet tileMatrixSet;
+
+  public Transform(WmtsTileMatrixSet tileMatrixSet) {
+    super();
+    this.tileMatrixSet = tileMatrixSet;
+  }
 
   public TileTranformation transformAndCrop(SlippyTile tile) {
     TileBox<WmtsTile> wmtsBox = transform(tile);
@@ -80,7 +85,7 @@ public class Transform {
     return new WmtsTile(col, row, wmtsZ);
   }
 
-  private int getWmtsZ(SlippyTile tile) {
+  protected static int getWmtsZ(SlippyTile tile) {
     return tile.z - 6;
   }
 }

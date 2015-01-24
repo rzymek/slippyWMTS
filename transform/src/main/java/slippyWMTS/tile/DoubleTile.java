@@ -1,10 +1,9 @@
-package slippy.wmts.tile;
+package slippyWMTS.tile;
 
-
-public class Tile {
+public class DoubleTile {
   public int z;
-  public int x;
-  public int y;
+  public double x;
+  public double y;
 
   @Override
   public String toString() {

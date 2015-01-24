@@ -1,4 +1,4 @@
-package slippy.wmts.position;
+package slippyWMTS.position;
 
 public class DoubleXY {
   public double x;
