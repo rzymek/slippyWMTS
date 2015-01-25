@@ -25,7 +25,7 @@ public class TileServlet extends HttpServlet {
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		try {
-			TileRequest tileReq = getTileRequest(req);
+			TileRequest tileReq = getTileRequest(req);			
 			tileProcessor.serve(tileReq, resp);
 		} catch (HttpErrorResult ex) {
 			resp.sendError(ex.errorCode);

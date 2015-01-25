@@ -19,7 +19,7 @@ class Service {
 	private final URL url;
 	public final Transform transform;
 	private final Layer layer;
-	private final TileMatrixSet tileMatrixSet;
+	public final TileMatrixSet tileMatrixSet;
 
 	public Service(URL url, String layer) throws IOException {
 		this.url = url;
