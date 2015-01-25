@@ -47,6 +47,8 @@ public class Capabilities {
   }
 
   public static class Layer {
+	    @XmlElement(namespace = OWS)
+	    public String Identifier;
     @XmlElement(namespace = WMTS)
     public TileMatrixSetLink[] TileMatrixSetLink;
 
@@ -102,6 +104,6 @@ public class Capabilities {
     @XmlElement(namespace = WMTS)
     public double MatrixWidth;
     @XmlElement(namespace = WMTS)
-    public double MatrixHeight;
-  }
+		public double MatrixHeight;
+	}
 }
