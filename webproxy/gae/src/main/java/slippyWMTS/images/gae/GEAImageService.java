@@ -1,5 +1,6 @@
 package slippyWMTS.images.gae;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,9 +8,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.google.appengine.api.images.Composite;
 import com.google.appengine.api.images.Composite.Anchor;
+import com.google.appengine.api.images.CompositeTransform;
 import com.google.appengine.api.images.Image;
 import com.google.appengine.api.images.ImagesService;
 import com.google.appengine.api.images.ImagesServiceFactory;
+import com.google.appengine.api.images.Transform;
 
 import slippyWMTS.area.TileBox;
 import slippyWMTS.images.Composition;
@@ -20,15 +23,40 @@ public class GEAImageService implements ImageOps {
 	private ImagesService imagesService = ImagesServiceFactory.getImagesService();
 
 	@Override
-	public void composeAndCrop(List<Composition> compositions, TileBox<DoubleXY> cropBox, HttpServletResponse resp) {		
-//		imagesService.composite(
-				makeComposites(compositions),
-//				resWidth as int,
-//				resHeight as int,
-//				backgroundColor,
-//				ImagesService.OutputEncoding.PNG
-//			);
-
+	public void composeAndCrop(List<Composition> compositions, TileBox<DoubleXY> cropBox, int width, int height, HttpServletResponse resp) {
+		double resWidth = cropBox.bottomRight.x * width;
+		double resHeight = cropBox.bottomRight.y * height;
+		long backgroundColor = 0;
+		Image composite = imagesService.composite(
+			makeComposites(compositions),
+			(int) resWidth ,
+			(int) resHeight,
+			backgroundColor,
+			ImagesService.OutputEncoding.PNG
+		);
+		//TODO:fix:
+		Transform crop = ImagesServiceFactory.makeCrop(
+			(cropBox.topLeft.x / width) * (resWidth/width),
+			(cropBox.topLeft.y / height) * (resHeight/height),
+			1.0,
+			1.0
+		);
+		
+		Transform resize = ImagesServiceFactory.makeResize(256, 256, /*allowStrech*/ true);
+		CompositeTransform transformations = ImagesServiceFactory.makeCompositeTransform().concatenate(crop);
+		composite = imagesService.applyTransform(transformations, composite);
+		try {
+			resp.setContentType("image/png");
+			resp.getOutputStream().write(composite.getImageData());
+		} catch (IOException e) {
+			try {
+				resp.setContentType("text/plain");
+				e.printStackTrace(resp.getWriter());
+			} catch (IOException e1) {
+				e.printStackTrace();
+				e1.printStackTrace();
+			}
+		}
 	}
 
 	private List<Composite> makeComposites(List<Composition> compositions) {
@@ -36,7 +64,7 @@ public class GEAImageService implements ImageOps {
 		List<Composite> result = new ArrayList<>();
 		for (Composition in : compositions) {
 			Image image = ImagesServiceFactory.makeImage(in.imageData);
-			result.add(ImagesServiceFactory.makeComposite(image, in.x, in.y, opacity, Anchor.TOP_LEFT));								
+			result.add(ImagesServiceFactory.makeComposite(image, in.x, in.y, opacity, Anchor.TOP_LEFT));
 		}
 		return result;
 	}

@@ -9,6 +9,6 @@ import slippyWMTS.position.DoubleXY;
 
 public interface ImageOps {
 
-	void composeAndCrop(List<Composition> compositions, TileBox<DoubleXY> cropBox, HttpServletResponse resp);
+	void composeAndCrop(List<Composition> compositions, TileBox<DoubleXY> cropBox, int width, int height, HttpServletResponse resp);
 
 }

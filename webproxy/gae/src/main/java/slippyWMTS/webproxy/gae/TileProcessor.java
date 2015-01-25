@@ -33,18 +33,22 @@ class TileProcessor {
 		final int startX = (int) tileBox.topLeft.x;
 		final int startY = (int) tileBox.topLeft.y;
 		final int z = tileBox.topLeft.z;
+		final double tileWidth = service.tileMatrixSet.TileMatrix[z].TileWidth;
+		final double tileHeight = service.tileMatrixSet.TileMatrix[z].TileHeight;
+		int width = (int) (tileBox.bottomRight.x - startX);
+		int height = (int) (tileBox.bottomRight.y - startY);
 		for (int x = startX; x < tileBox.bottomRight.x; x++) {
 			for (int y = startY; y < tileBox.bottomRight.y; y++) {
 				URL url = service.getURL(new WmtsTile(x, y, z));
 				byte[] data = cache.get(url);
 				final int col = x - startX;
 				final int row = y - startY;
-				int pixelX = (int) (col * service.tileMatrixSet.TileMatrix[z].TileWidth);
-				int pixelY = (int) (row * service.tileMatrixSet.TileMatrix[z].TileHeight);
+				int pixelX = (int) (col * tileWidth);
+				int pixelY = (int) (row * tileHeight);
 				compositions.add(new Composition(pixelX, pixelY, data));
 			}
 		}
-		imageOps.composeAndCrop(compositions, transformAndCrop.cropBox, resp);
+		imageOps.composeAndCrop(compositions, transformAndCrop.cropBox, width, height, resp);
 	}
 
 	public void register(String name, String serviceURL, String layer) {
