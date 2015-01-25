@@ -90,6 +90,11 @@ public class Transform {
     return getWmtsTile(tile.getTopLeftCoordinates(), wmtsZ);
   }
 
+  /**
+   * Based on  "OpenGIS Web Map Tile Service Implementation Standard"; version:1.0.0; #07-057r7
+   * Chapter 6.1 Tile matrix set – the geometry of the tiled space, page 8 
+   * http://www.opengeospatial.org/standards/wmts
+   */
   private WmtsTile getWmtsTile(LonLat topLeft, int wmtsZ) {
     double x = topLeft.getLon();
     double y = topLeft.getLat();
