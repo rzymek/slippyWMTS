@@ -22,30 +22,35 @@ import slippyWMTS.position.DoubleXY;
 public class GEAImageService implements ImageOps {
 	private ImagesService imagesService = ImagesServiceFactory.getImagesService();
 
-	@Override
-	public void composeAndCrop(List<Composition> compositions, TileBox<DoubleXY> cropBox, int width, int height, HttpServletResponse resp) {
-		double resWidth = cropBox.bottomRight.x * width;
-		double resHeight = cropBox.bottomRight.y * height;
-		long backgroundColor = 0;
-		Image composite = imagesService.composite(
+  @Override
+  public void composeAndCrop(List<Composition> compositions, TileBox<DoubleXY> cropBox, int width, int height, HttpServletResponse resp) {
+    double resWidth = cropBox.bottomRight.x;
+    double resHeight = cropBox.bottomRight.y;
+    long backgroundColor = 0;
+    Image composite = imagesService.composite(
 			makeComposites(compositions),
 			(int) resWidth ,
 			(int) resHeight,
 			backgroundColor,
 			ImagesService.OutputEncoding.PNG
 		);
-		//TODO:fix:
 		Transform crop = ImagesServiceFactory.makeCrop(
-			(cropBox.topLeft.x / width) * (resWidth/width),
-			(cropBox.topLeft.y / height) * (resHeight/height),
+			(cropBox.topLeft.x / resWidth),
+			(cropBox.topLeft.y / resHeight),
 			1.0,
 			1.0
-		);
-		
+		);		
 		Transform resize = ImagesServiceFactory.makeResize(256, 256, /*allowStrech*/ true);
-		CompositeTransform transformations = ImagesServiceFactory.makeCompositeTransform().concatenate(crop);
+		CompositeTransform transformations = ImagesServiceFactory.makeCompositeTransform()
+		    .concatenate(crop)
+		    .concatenate(resize);
 		composite = imagesService.applyTransform(transformations, composite);
-		try {
+		
+		write(resp, composite);
+	}
+
+  private void write(HttpServletResponse resp, Image composite) {
+    try {
 			resp.setContentType("image/png");
 			resp.getOutputStream().write(composite.getImageData());
 		} catch (IOException e) {
@@ -57,7 +62,7 @@ public class GEAImageService implements ImageOps {
 				e1.printStackTrace();
 			}
 		}
-	}
+  }
 
 	private List<Composite> makeComposites(List<Composition> compositions) {
 		float opacity = 1;

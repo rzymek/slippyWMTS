@@ -21,6 +21,7 @@ public class WeakHashMapCache implements Cache {
 
 	private byte[] download(URL url) {
 		try {
+		  System.out.println(url);
 			try (DataInputStream in = new DataInputStream(url.openStream())) {
 				return readFully(in);
 			}

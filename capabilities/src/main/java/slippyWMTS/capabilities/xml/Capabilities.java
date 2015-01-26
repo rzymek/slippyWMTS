@@ -98,12 +98,12 @@ public class Capabilities {
     @XmlList
     public double[] TopLeftCorner;
     @XmlElement(namespace = WMTS)
-    public double TileWidth;
+    public int TileWidth;
     @XmlElement(namespace = WMTS)
-    public double TileHeight;
+    public int TileHeight;
     @XmlElement(namespace = WMTS)
-    public double MatrixWidth;
+    public int MatrixWidth;
     @XmlElement(namespace = WMTS)
-		public double MatrixHeight;
+		public int MatrixHeight;
 	}
 }
