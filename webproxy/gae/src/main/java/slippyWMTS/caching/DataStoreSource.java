@@ -1,6 +1,7 @@
 package slippyWMTS.caching;
 
 import java.net.URL;
+import java.util.logging.Logger;
 
 import slippyWMTS.images.RawImage;
 
@@ -19,6 +20,7 @@ public class DataStoreSource implements DataSource<RawImage> {
 	private AsyncDatastoreService asyncSatastore = DatastoreServiceFactory.getAsyncDatastoreService();
 
 	public DataStoreSource(DataSource<RawImage> parent) {
+
 		this.parent = parent;
 	}
 
@@ -29,6 +31,7 @@ public class DataStoreSource implements DataSource<RawImage> {
 		try {
 			Entity entity = datastore.get(KeyFactory.createKey(kind, url.toString()));
 			final Blob blob = (Blob) entity.getProperty(propertyName);
+			Logger.getLogger("cache").info("[DataStore] " + url);
 			return new RawImage(blob.getBytes());
 		} catch (EntityNotFoundException e) {
 			RawImage rawImage = parent.get(url);
