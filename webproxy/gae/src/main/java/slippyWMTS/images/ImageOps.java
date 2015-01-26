@@ -2,13 +2,11 @@ package slippyWMTS.images;
 
 import java.util.List;
 
-import javax.servlet.http.HttpServletResponse;
-
 import slippyWMTS.area.TileBox;
 import slippyWMTS.position.DoubleXY;
 
-public interface ImageOps {
+public interface ImageOps<I> {
 
-	void composeAndCrop(List<Composition> compositions, TileBox<DoubleXY> cropBox, int width, int height, HttpServletResponse resp);
+	I composeAndCrop(List<Composition<I>> compositions, TileBox<DoubleXY> cropBox, int width, int height);
 
 }

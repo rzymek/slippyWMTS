@@ -1,12 +1,12 @@
 package slippyWMTS.images;
 
-public class Composition {
+public class Composition<I> {
 
-	public final byte[] imageData;
+	public final I imageData;
 	public final int x;
 	public final int y;
 
-	public Composition(int x, int y, byte[] imageData) {
+	public Composition(int x, int y, I imageData) {
 		this.x = x;
 		this.y = y;
 		this.imageData = imageData;
