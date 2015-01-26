@@ -20,7 +20,6 @@ public class DataStoreSource implements DataSource<RawImage> {
 	private AsyncDatastoreService asyncSatastore = DatastoreServiceFactory.getAsyncDatastoreService();
 
 	public DataStoreSource(DataSource<RawImage> parent) {
-
 		this.parent = parent;
 	}
 
