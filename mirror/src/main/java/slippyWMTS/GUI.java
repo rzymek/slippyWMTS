@@ -49,8 +49,6 @@ public class GUI extends JFrame implements Runnable, StatusListener {
 		setVisible(true);
 		thread = new Thread(this) {
 			public void run() {
-				long filesSize = 0;
-				long filesCount = 0;
 				String endpoint = "http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/TOPO";
 				String[] sets = { ".*EPSG:.*:2180", ".*EPSG:.*:4326" };
 				for (String set : sets) {
