@@ -54,6 +54,8 @@ public class Fetch {
 			tileMatrixSet = capabilities.Contents.getTileMatrixSetByCRS(Pattern.compile(set));
 			final TileMatrixSetLink tileMatrixSetLink = layer.getTileMatrixSet(tileMatrixSet.Identifier);
 			return tileMatrixSetLink.TileMatrixSetLimits.TileMatrixLimits[z];
+		}catch (Exception e) {
+			throw new RuntimeException("GetCapabilities:"+e,e);
 		}
 	}
 
@@ -67,7 +69,13 @@ public class Fetch {
 		TileMatrixLimits limits = getTileMatrix();
 		for (int row = limits.MinTileRow; row <= limits.MaxTileRow; row++) {
 			for (int col = limits.MinTileCol; col <= limits.MaxTileCol; col++) {
-				fetch(row, col);
+				try {
+					fetch(row, col);
+				} catch (Exception ex) {
+					String msg = "[" + new Date() + "] " + z+"/"+col+"/"+row+ ": " + ex.toString() + "\n";
+					error(msg);
+				}
+
 			}
 		}
 	}
@@ -100,10 +108,11 @@ public class Fetch {
 				fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
 			}
 			check(file);
-		} catch (IOException ex) {
-			String msg = "[" + new Date() + "] " + filename + ": " + ex.toString() + "\n";
-			Files.append(msg, new File("fetch.log"), StandardCharsets.UTF_8);
 		}
+	}
+
+	protected void error(String msg) throws IOException {
+		Files.append(msg, new File("fetch.log"), StandardCharsets.UTF_8);
 	}
 
 	private void check(File file) throws IOException {
@@ -115,11 +124,15 @@ public class Fetch {
 			if (image.getWidth() != tileMatrixSet.TileMatrix[z].TileWidth || image.getHeight() != tileMatrixSet.TileMatrix[z].TileHeight) {
 				throw new IOException("invalid image dimentions: " + image.getWidth() + "x" + image.getHeight());
 			}
-			System.out.println(file.getAbsolutePath());
+			log(file.getAbsolutePath());
 		} catch (IOException e) {
 			file.delete();
 			throw e;
 		}
+	}
+
+	protected void log(final String x) {
+		System.out.println(x);
 	}
 
 	public static void main(String[] args) throws Exception {
