@@ -32,6 +32,7 @@ import slippyWMTS.capabilities.xml.Capabilities.TileMatrixSetLink;
 import com.google.common.io.Files;
 
 public class Fetch {
+	private static final int AVG_TILE_SIZE = 33000;
 	private URL url;
 	private String set;
 	private int z;
@@ -47,7 +48,7 @@ public class Fetch {
 		@Override
 		public void text(String string) {
 			// TODO Auto-generated method stub
-			
+
 		}
 	};
 
@@ -80,17 +81,28 @@ public class Fetch {
 		return conn.getInputStream();
 	}
 
+	public static String humanReadableByteCount(long bytes) {
+		boolean si = true;
+		int unit = si ? 1000 : 1024;
+		if (bytes < unit)
+			return bytes + " B";
+		int exp = (int) (Math.log(bytes) / Math.log(unit));
+		String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
+		return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
+	}
+
 	public void fetch() throws IOException {
 		TileMatrixLimits limits = getTileMatrix();
-		int rows = limits.MaxTileRow - limits.MinTileRow;
-		int cols = limits.MaxTileCol - limits.MinTileCol;
-		double total = rows * cols;
+		int rows = limits.MaxTileRow - limits.MinTileRow + 1;
+		int cols = limits.MaxTileCol - limits.MinTileCol + 1;
+		long total = rows * cols;
 		int count = 0;
+		error(downloadDir+":" + z + "   tiles=" + total + " -> "+humanReadableByteCount(total*AVG_TILE_SIZE));
 		for (int row = limits.MinTileRow; row <= limits.MaxTileRow; row++) {
 			for (int col = limits.MinTileCol; col <= limits.MaxTileCol; col++) {
 				try {
 					fetch(row, col);
-					status.progress(++count / total);
+					status.progress(++count / (double) total);
 				} catch (Exception ex) {
 					String msg = "[" + new Date() + "] " + z + "/" + col + "/" + row + ": " + ex.toString() + "\n";
 					error(msg);
@@ -143,30 +155,30 @@ public class Fetch {
 	}
 
 	private void check(File file) throws IOException {
-	    try(final InputStream is = new FileInputStream(file)) {
-	        final ImageInputStream imageInputStream = ImageIO               .createImageInputStream(is);
-	        final Iterator<ImageReader> imageReaders = ImageIO           .getImageReaders(imageInputStream);
-	        if (!imageReaders.hasNext()) {
-	            throw new IOException("no image reader");
-	        }
-	        final ImageReader imageReader = imageReaders.next();
-	        imageReader.setInput(imageInputStream);
-	        final BufferedImage image = imageReader.read(0);
-	        if (image == null) {
-	        	throw new IOException("invalid image file");
-	        }
+		try (final InputStream is = new FileInputStream(file)) {
+			final ImageInputStream imageInputStream = ImageIO.createImageInputStream(is);
+			final Iterator<ImageReader> imageReaders = ImageIO.getImageReaders(imageInputStream);
+			if (!imageReaders.hasNext()) {
+				throw new IOException("no image reader");
+			}
+			final ImageReader imageReader = imageReaders.next();
+			imageReader.setInput(imageInputStream);
+			final BufferedImage image = imageReader.read(0);
+			if (image == null) {
+				throw new IOException("invalid image file");
+			}
 			if (image.getWidth() != tileMatrixSet.TileMatrix[z].TileWidth || image.getHeight() != tileMatrixSet.TileMatrix[z].TileHeight) {
 				throw new IOException("invalid image dimentions: " + image.getWidth() + "x" + image.getHeight());
 			}
-	        image.flush();
-	        if (imageReader.getFormatName().equals("JPEG")) {
-	            imageInputStream.seek(imageInputStream.getStreamPosition() - 2);
-	            final byte[] lastTwoBytes = new byte[2];
-	            imageInputStream.read(lastTwoBytes);
-	            if (lastTwoBytes[0] != (byte)0xff && lastTwoBytes[1] != (byte)0xd9) {
-		        	throw new IOException("truncated file");
-	            }
-	        }
+			image.flush();
+			if (imageReader.getFormatName().equals("JPEG")) {
+				imageInputStream.seek(imageInputStream.getStreamPosition() - 2);
+				final byte[] lastTwoBytes = new byte[2];
+				imageInputStream.read(lastTwoBytes);
+				if (lastTwoBytes[0] != (byte) 0xff && lastTwoBytes[1] != (byte) 0xd9) {
+					throw new IOException("truncated file");
+				}
+			}
 		} catch (IOException e) {
 			file.delete();
 			throw e;

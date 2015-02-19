@@ -4,14 +4,9 @@ import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.EventQueue;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.IOException;
 
-import javax.swing.Icon;
-import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -54,12 +49,12 @@ public class GUI extends JFrame implements Runnable, StatusListener {
 		setVisible(true);
 		thread = new Thread(this) {
 			public void run() {
-
+				long filesSize = 0;
+				long filesCount = 0;
 				String endpoint = "http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/TOPO";
 				String[] sets = { ".*EPSG:.*:2180", ".*EPSG:.*:4326" };
 				for (String set : sets) {
 					for (int i = 0; i <= 10; i++) {
-						showError("Warstwa: " + i);
 						try {
 							final Fetch fetcher = new Fetch(endpoint, i, set) {
 								protected void error(String msg) throws IOException {
