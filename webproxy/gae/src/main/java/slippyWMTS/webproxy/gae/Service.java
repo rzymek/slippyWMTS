@@ -22,6 +22,7 @@ class Service {
 	public final TileMatrixSet tileMatrixSet;
 
 	public Service(URL url, String layer) throws IOException {
+		System.setProperty("http.agent", "");
 		this.url = url;
 
 		Map<String, String> params = new HashMap<>();

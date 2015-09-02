@@ -64,7 +64,8 @@ public class Fetch {
 		params.put("SERVICE", "WMTS");
 		params.put("REQUEST", "GetCapabilities");
 		URL getCapabilities = UrlBuilder.createURL(url, params);
-		try (InputStream in = open(getCapabilities)) {
+//		try (InputStream in = open(getCapabilities)) {
+		try (InputStream in = new FileInputStream("cap.xml")) {
 			Capabilities capabilities = Capabilities.parse(in);
 			layer = capabilities.Contents.Layer;
 			tileMatrixSet = capabilities.Contents.getTileMatrixSetByCRS(Pattern.compile(set));
@@ -99,6 +100,9 @@ public class Fetch {
 		int count = 0;
 		error(downloadDir+":" + z + "   tiles=" + total + " -> "+humanReadableByteCount(total*AVG_TILE_SIZE));
 		for (int row = limits.MinTileRow; row <= limits.MaxTileRow; row++) {
+			int percent = row * 1000 / Math.max(1, limits.MaxTileRow - limits.MinTileRow);
+			System.err.println("["+globalProgress+"] "+percent+"%%");
+			System.out.println("echo '["+globalProgress+"] "+percent+"%%'");
 			for (int col = limits.MinTileCol; col <= limits.MaxTileCol; col++) {
 				try {
 					fetch(row, col);
@@ -127,8 +131,12 @@ public class Fetch {
 		URL getTile = UrlBuilder.createURL(url, params);
 		download(getTile, String.format("%d/%d/%d.jpg", z, col, row));
 	}
-
 	private void download(URL getTile, String filename) throws IOException {
+		File file = new File(downloadDir, filename);
+		System.out.println("mkdir -p "+file.getParentFile());
+		System.out.println("test -s '"+file+"' || wget -q -O '"+file+"' '"+getTile+"'");
+	}
+	private void downloadReal(URL getTile, String filename) throws IOException {
 		File file = new File(downloadDir, filename);
 		file.getParentFile().mkdirs();
 		if (file.exists()) {
@@ -184,12 +192,18 @@ public class Fetch {
 			throw e;
 		}
 	}
-
+	private static String globalProgress = "";
 	public static void main(String[] args) throws Exception {
 		String endpoint = "http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/TOPO";
-		String[] sets = { ".*EPSG:.*:2180", ".*EPSG:.*:4326" };
+		String[] sets = {
+//				".*EPSG:.*:2180",
+				".*EPSG:.*:4326"
+		};
+		System.out.println("#/bin/sh");
 		for (String set : sets) {
 			for (int i = 0; i <= 10; i++) {
+				System.out.println();
+				globalProgress = i+"/"+10;
 				new Fetch(endpoint, i, set).fetch();
 			}
 		}

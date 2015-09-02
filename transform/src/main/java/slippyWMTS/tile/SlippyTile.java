@@ -3,6 +3,8 @@ package slippyWMTS.tile;
 import slippyWMTS.position.LonLat;
 
 public class SlippyTile extends Tile {
+    public static final int WIDTH = 256;
+    public static final int HEIGHT = 256;
     /**
      * https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Java
      */

@@ -10,6 +10,9 @@ var sources = {
     'OpenCycleMap' : new ol.source.XYZ({
         url : 'http://tile.opencyclemap.org/cycle/{z}/{x}/{y}.png'
     }),
+    'local' : new ol.source.OSM({
+        url : 'http://localhost/slippy/{z}/{x}/{y}.png'
+    }),
     'GeoPortal TOPO' : new ol.source.OSM({
         url : '/tile/topo/{z}/{x}/{y}.png'
     }),
