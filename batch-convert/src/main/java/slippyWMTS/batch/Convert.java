@@ -57,7 +57,7 @@ public class Convert implements Runnable {
                         try {
                             SlippyTile slippyTile = new SlippyTile(z + 6, x, y);
                             Image slippy = generateTile(tileMatrixSet, transform, slippyTile);
-                            File dir = new File("slippy/" + slippyTile.z + "/" + slippyTile.x + "/");
+                            File dir = new File("osmgeo/" + slippyTile.z + "/" + slippyTile.x + "/");
                             dir.mkdirs();
                             ImageIO.write((RenderedImage) slippy, EXT, new File(dir, slippyTile.y + "."+EXT));
                         } catch (Exception ex) {
