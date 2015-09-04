@@ -7,7 +7,9 @@
 	<packaging>pom</packaging>
 
 	<modules>
-		<module>transform</module>
+        <module>transform</module>
+        <module>mirror</module>
+        <module>batch-convert</module>
 		<module>webproxy/gae</module>
 		<module>capabilities</module>
 	</modules>
