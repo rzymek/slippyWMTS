@@ -53,11 +53,11 @@ public class Fetch {
     };
     private Capabilities capabilities;
 
-    public Fetch(String url, int z, String set) throws MalformedURLException {
+    public Fetch(String url, int z, String set, String downloadDir) throws MalformedURLException {
+        this.downloadDir = downloadDir;
         this.url = new URL(url);
         this.z = z;
         this.set = set;
-        downloadDir = set.replaceAll("\\W+", "");
     }
 
 
@@ -205,7 +205,8 @@ public class Fetch {
     private static String globalProgress = "";
 
     public static void main(String[] args) throws Exception {
-        String endpoint = "http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/TOPO";
+        String type = "TOPO";
+        String endpoint = "http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/"+ type;
         String[] sets = {
 //				".*EPSG:.*:2180",
                 ".*EPSG:.*:4326"
@@ -215,7 +216,7 @@ public class Fetch {
             for (int i = 0; i <= 10; i++) {
                 System.out.println();
                 globalProgress = i + "/" + 10;
-                new Fetch(endpoint, i, set).fetch();
+                new Fetch(endpoint, i, set, "wmts_"+type).fetch();
             }
         }
     }

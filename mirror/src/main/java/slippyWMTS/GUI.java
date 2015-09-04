@@ -55,13 +55,14 @@ public class GUI extends JFrame implements Runnable, StatusListener {
 		setVisible(true);
 		thread = new Thread(this) {
 			public void run() {
-				String endpoint = "http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/TOPO";
+				String type = "TOPO";
+				String endpoint = "http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/"+ type;
 //				String[] sets = { ".*EPSG:.*:2180", ".*EPSG:.*:4326" };
 				String[] sets = { ".*EPSG:.*:4326" };
 				for (String set : sets) {
 					for (int i = 0; i <= GET_LAYERS; i++) {
 						try {
-							final Fetch fetcher = new Fetch(endpoint, i, set) {
+							final Fetch fetcher = new Fetch(endpoint, i, set, "wmts_"+type) {
 								protected void error(String msg) throws IOException {
 									showError(msg);
 									super.error(msg);
