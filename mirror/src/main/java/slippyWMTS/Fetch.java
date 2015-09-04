@@ -101,8 +101,8 @@ public class Fetch {
 		error(downloadDir+":" + z + "   tiles=" + total + " -> "+humanReadableByteCount(total*AVG_TILE_SIZE));
 		for (int row = limits.MinTileRow; row <= limits.MaxTileRow; row++) {
 			int percent = row * 1000 / Math.max(1, limits.MaxTileRow - limits.MinTileRow);
-			System.err.println("["+globalProgress+"] "+percent+"%%");
-			System.out.println("echo '["+globalProgress+"] "+percent+"%%'");
+//			System.err.println("["+globalProgress+"] "+percent+"%%");
+//			System.out.println("echo '["+globalProgress+"] "+percent+"%%'");
 			for (int col = limits.MinTileCol; col <= limits.MaxTileCol; col++) {
 				try {
 					fetch(row, col);
@@ -131,24 +131,26 @@ public class Fetch {
 		URL getTile = UrlBuilder.createURL(url, params);
 		download(getTile, String.format("%d/%d/%d.jpg", z, col, row));
 	}
-	private void download(URL getTile, String filename) throws IOException {
+	private void downloadSH(URL getTile, String filename) throws IOException {
 		File file = new File(downloadDir, filename);
 		System.out.println("mkdir -p "+file.getParentFile());
 		System.out.println("test -s '"+file+"' || wget -q -O '"+file+"' '"+getTile+"'");
 	}
-	private void downloadReal(URL getTile, String filename) throws IOException {
+	private void download(URL getTile, String filename) throws IOException {
 		File file = new File(downloadDir, filename);
 		file.getParentFile().mkdirs();
 		if (file.exists()) {
 			try {
-				check(file);
+                if(file.length() > 0) return;
+//				check(file); //long check
 				return;
 			} catch (Exception ex) {
 				//fetch again
 			}
 		}
+        System.out.println(getTile);
+        status.text(filename);
 		try (final InputStream in = open(getTile)) {
-			status.text(filename);
 			ReadableByteChannel rbc = Channels.newChannel(in);
 			try (FileOutputStream fos = new FileOutputStream(file)) {
 				fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
