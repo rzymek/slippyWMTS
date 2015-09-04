@@ -17,7 +17,9 @@ import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -25,6 +27,8 @@ import static java.awt.image.BufferedImage.TYPE_INT_RGB;
 
 public class Convert implements Runnable {
     private static final String EXT = "jpg";
+    private int percent;
+    private int layer;
 
     private Capabilities getCapabilities() throws IOException {
         try (InputStream in = Convert.class.getResourceAsStream("/cap.xml")) {
@@ -32,34 +36,35 @@ public class Convert implements Runnable {
         }
     }
 
+
     public void run() {
         try {
             Capabilities capabilities = getCapabilities();
             Capabilities.TileMatrixSet tileMatrixSet = capabilities.Contents.getTileMatrixSetByCRS(Pattern.compile(".*:" + Epsg.WGS84.code + "$"));
             Transform transform = new Transform(tileMatrixSet);
 
-            for (int z = 0; z < tileMatrixSet.TileMatrix.length; z++) {
-                String layer = z + "/" + tileMatrixSet.TileMatrix.length;
+            for (int z = 0; z < 9; z++) {
+                layer = z;
 
-                Capabilities.TileMatrix tileMatrix = tileMatrixSet.TileMatrix[z];
-
-//            LonLat topLeft = new LonLat(21.016667, 52.233333);
-//            LonLat bottomRight = new LonLat(22, 51);
                 LonLat topLeft = new LonLat(14.1400, 55.9500);
                 LonLat bottomRight = new LonLat(24.1600, 49.0300);
 
                 SlippyTile topLeftSlippy = new SlippyTile(topLeft, z + 6);
                 SlippyTile bottomRightSlippy = new SlippyTile(bottomRight, z + 6);
                 for (int x = topLeftSlippy.x; x <= bottomRightSlippy.x; x++) {
-                    int percent = (x - topLeftSlippy.x) * 100 / (bottomRightSlippy.x - topLeftSlippy.x);
-                    progress("[" + layer + "] " + percent + "%");
+                    percent = (x - topLeftSlippy.x) * 100 / (bottomRightSlippy.x - topLeftSlippy.x);
+                    progress("");
                     for (int y = topLeftSlippy.y; y <= bottomRightSlippy.y; y++) {
                         try {
                             SlippyTile slippyTile = new SlippyTile(z + 6, x, y);
                             Image slippy = generateTile(tileMatrixSet, transform, slippyTile);
                             File dir = new File("osmgeo/" + slippyTile.z + "/" + slippyTile.x + "/");
                             dir.mkdirs();
-                            ImageIO.write((RenderedImage) slippy, EXT, new File(dir, slippyTile.y + "."+EXT));
+                            File output = new File(dir, slippyTile.y + "." + EXT);
+                            if (output.exists() && output.length() > 0) {
+                                continue;
+                            }
+                            ImageIO.write((RenderedImage) slippy, EXT, output);
                         } catch (Exception ex) {
                             progress("ERR:" + ex.getMessage());
                         }
@@ -72,8 +77,15 @@ public class Convert implements Runnable {
         }
     }
 
+    private SimpleDateFormat format = new SimpleDateFormat("HH:mm.ss");
+
     protected void progress(String s) {
-        System.out.println(s);
+        System.out.println(String.format("[%s][%d][% 3d%%] %s",
+                format.format(new Date()),
+                layer,
+                percent,
+                s
+        ));
     }
 
     private Image compose(List<Composition> compositions, TileBox<DoubleXY> cropBox) {
@@ -133,7 +145,7 @@ public class Convert implements Runnable {
         try {
             return ImageIO.read(wmtsFile);
         } catch (IOException ex) {
-            throw new RuntimeException(wmtsFile+" "+ex.getMessage(), ex);
+            throw new RuntimeException(wmtsFile + " " + ex.getMessage(), ex);
         }
     }
 

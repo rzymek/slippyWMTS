@@ -14,7 +14,12 @@ import javax.swing.JTextArea;
 public class GUI extends JFrame implements Runnable, StatusListener {
 
 	private static final int MAX_LINES = 10000;
-	private static final int GET_LAYERS = 6;//10;
+    /*
+     8 = 1:25 000
+     9 = 1:10 000
+    10 = 1:10 000 (higher res)
+     */
+	private static final int GET_LAYERS = 9;
 	private JTextArea log;
 	private JProgressBar status;
 	private Thread thread;
