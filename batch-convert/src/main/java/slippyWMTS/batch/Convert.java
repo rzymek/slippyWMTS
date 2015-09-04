@@ -29,6 +29,11 @@ public class Convert implements Runnable {
     private static final String EXT = "jpg";
     private int percent;
     private int layer;
+    private String dir;
+
+    public Convert(String dir) {
+        this.dir = dir;
+    }
 
     private Capabilities getCapabilities() throws IOException {
         try (InputStream in = Convert.class.getResourceAsStream("/cap.xml")) {
@@ -141,7 +146,7 @@ public class Convert implements Runnable {
     }
 
     private BufferedImage getImage(WmtsTile wmtsTile) throws IOException {
-        File wmtsFile = new File("EPSG4326/" + wmtsTile.z + "/" + wmtsTile.getX() + "/" + wmtsTile.getY() + ".jpg");
+        File wmtsFile = new File(dir+"/" + wmtsTile.z + "/" + wmtsTile.getX() + "/" + wmtsTile.getY() + ".jpg");
         try {
             return ImageIO.read(wmtsFile);
         } catch (IOException ex) {
@@ -150,6 +155,6 @@ public class Convert implements Runnable {
     }
 
     public static void main(String[] args) throws Exception {
-        new Convert().run();
+        new Convert(args[0]).run();
     }
 }
