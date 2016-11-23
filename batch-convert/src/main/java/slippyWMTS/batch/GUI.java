@@ -38,10 +38,6 @@ public class GUI extends JFrame implements Runnable {
 
     public void run() {
         setVisible(true);
-        if(!new File("EPSG4326").isDirectory()){
-            JOptionPane.showMessageDialog(this, "Uruchom w tym samym katalogu co /EPSG4326","EPSG4326",JOptionPane.ERROR_MESSAGE);
-            System.exit(1);
-        }
         thread = new Thread(new Convert() {
             @Override
             protected void progress(String s) {

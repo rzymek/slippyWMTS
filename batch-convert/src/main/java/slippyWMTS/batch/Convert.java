@@ -18,8 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
+import java.util.*;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -29,11 +28,6 @@ public class Convert implements Runnable {
     private static final String EXT = "jpg";
     private int percent;
     private int layer;
-    private String dir;
-
-    public Convert(String dir) {
-        this.dir = dir;
-    }
 
     private Capabilities getCapabilities() throws IOException {
         try (InputStream in = Convert.class.getResourceAsStream("/cap.xml")) {
@@ -58,39 +52,41 @@ public class Convert implements Runnable {
                 SlippyTile bottomRightSlippy = new SlippyTile(bottomRight, z + 6);
                 for (int x = topLeftSlippy.x; x <= bottomRightSlippy.x; x++) {
                     percent = (x - topLeftSlippy.x) * 100 / (bottomRightSlippy.x - topLeftSlippy.x);
-                    progress("");
+                    progress(getProgressMsg());
                     for (int y = topLeftSlippy.y; y <= bottomRightSlippy.y; y++) {
-                        try {
-                            SlippyTile slippyTile = new SlippyTile(z + 6, x, y);
-                            Image slippy = generateTile(tileMatrixSet, transform, slippyTile);
-                            File dir = new File("osmgeo/" + slippyTile.z + "/" + slippyTile.x + "/");
-                            dir.mkdirs();
-                            File output = new File(dir, slippyTile.y + "." + EXT);
-                            if (output.exists() && output.length() > 0) {
-                                continue;
-                            }
-                            ImageIO.write((RenderedImage) slippy, EXT, output);
-                        } catch (Exception ex) {
-                            progress("ERR:" + ex.getMessage());
-                        }
-
+                        SlippyTile slippyTile = new SlippyTile(z + 6, x, y);
+                        Image slippy = generateTile(tileMatrixSet, transform, slippyTile);
+                        File dir = new File("batch-convert/target/osmgeo/" + slippyTile.z + "/" + slippyTile.x + "/");
+                        dir.mkdirs();
+                        File output = new File(dir, slippyTile.y + "." + EXT);
+//                        if (output.exists() && output.length() > 0) {
+//                            continue;
+//                        }
+                        ImageIO.write((RenderedImage) slippy, EXT, output);
                     }
                 }
             }
         } catch (Exception ex) {
-            progress("ERR:" + ex.getMessage());
+            handleError(ex);
         }
+    }
+
+    private void handleError(Exception ex) {
+        ex.printStackTrace();
+        progress("ERR:" + ex.getMessage());
     }
 
     private SimpleDateFormat format = new SimpleDateFormat("HH:mm.ss");
 
     protected void progress(String s) {
-        System.out.println(String.format("[%s][%d][% 3d%%] %s",
+    }
+
+    private String getProgressMsg() {
+        return String.format("[%s][%d][% 3d%%]",
                 format.format(new Date()),
                 layer,
-                percent,
-                s
-        ));
+                percent
+        );
     }
 
     private Image compose(List<Composition> compositions, TileBox<DoubleXY> cropBox) {
@@ -100,9 +96,15 @@ public class Convert implements Runnable {
         compositions.stream().forEach(it -> {
             g.drawImage(it.image, it.pixelX, it.pixelY, null);
         });
-        BufferedImage cropped = buf.getSubimage((int) cropBox.topLeft.x, (int) cropBox.topLeft.y,
-                (int) (cropBox.bottomRight.x - cropBox.topLeft.x),
-                (int) (cropBox.bottomRight.y - cropBox.topLeft.y));
+        double x = Math.max(0, cropBox.topLeft.x);
+        double y = Math.max(0, cropBox.topLeft.y);
+        double w = cropBox.bottomRight.x - x;
+        double h = cropBox.bottomRight.y - y;
+        BufferedImage cropped = buf.getSubimage(
+                (int) x,
+                (int) y,
+                (int) w,
+                (int) h);
         BufferedImage slippy = new BufferedImage(256, 256, BufferedImage.TYPE_INT_RGB);
         Graphics2D g2 = slippy.createGraphics();
         g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
@@ -138,23 +140,36 @@ public class Convert implements Runnable {
                 final int row = y - startY;
                 int pixelX = col * tileWidth;
                 int pixelY = row * tileHeight;
-                BufferedImage image = getImage(wmtsTile);
-                compositions.add(new Composition(image, pixelX, pixelY));
+                try {
+                    BufferedImage image = getImage(wmtsTile);
+                    compositions.add(new Composition(image, pixelX, pixelY));
+                } catch (IndexOutOfBoundsException ex) {
+                    continue;
+                }
             }
         }
         return compose(compositions, tileTranformation.cropBox);
     }
 
-    private BufferedImage getImage(WmtsTile wmtsTile) throws IOException {
-        File wmtsFile = new File(dir+"/" + wmtsTile.z + "/" + wmtsTile.getX() + "/" + wmtsTile.getY() + ".jpg");
-        try {
-            return ImageIO.read(wmtsFile);
-        } catch (IOException ex) {
-            throw new RuntimeException(wmtsFile + " " + ex.getMessage(), ex);
-        }
-    }
 
-    public static void main(String[] args) throws Exception {
-        new Convert(args[0]).run();
+    private static final WeakHashMap<String, BufferedImage> wmtsImages = new WeakHashMap<>();
+    private static final Map<Integer, Fetch> layers = new HashMap<>();
+
+    private BufferedImage getImage(WmtsTile wmtsTile) throws IOException {
+        BufferedImage cached = wmtsImages.get(wmtsTile.toString());
+        if (cached == null) {
+            String type = "TOPO";
+            String endpoint = "http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/" + type;
+            String set = ".*EPSG:.*:4326";
+
+            Fetch fetch = layers.get(wmtsTile.z);
+            if (fetch == null) {
+                fetch = new Fetch(endpoint, wmtsTile.z, set);
+                layers.put(wmtsTile.z, fetch);
+            }
+            cached = fetch.fetch(wmtsTile.getY(), wmtsTile.getX());
+            wmtsImages.put(wmtsTile.toString(), cached);
+        }
+        return cached;
     }
 }
