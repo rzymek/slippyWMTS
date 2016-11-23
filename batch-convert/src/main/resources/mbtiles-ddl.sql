@@ -1,0 +1,14 @@
+CREATE TABLE IF NOT EXISTS tiles (
+            zoom_level integer,
+            tile_column integer,
+            tile_row integer,
+            tile_data blob);
+CREATE TABLE IF NOT EXISTS metadata
+        (name text, value text);
+CREATE UNIQUE INDEX IF NOT EXISTS name on metadata (name);
+CREATE UNIQUE INDEX IF NOT EXISTS tile_index on tiles
+        (zoom_level, tile_column, tile_row);
+
+PRAGMA synchronous=0;
+PRAGMA locking_mode=EXCLUSIVE;
+PRAGMA journal_mode=DELETE;

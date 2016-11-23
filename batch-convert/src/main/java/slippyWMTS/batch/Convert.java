@@ -4,6 +4,9 @@ import slippyWMTS.Epsg;
 import slippyWMTS.TileTranformation;
 import slippyWMTS.Transform;
 import slippyWMTS.area.TileBox;
+import slippyWMTS.batch.store.FileStore;
+import slippyWMTS.batch.store.MBTilesStore;
+import slippyWMTS.batch.store.Store;
 import slippyWMTS.capabilities.xml.Capabilities;
 import slippyWMTS.position.DoubleXY;
 import slippyWMTS.position.LonLat;
@@ -37,11 +40,10 @@ public class Convert implements Runnable {
 
 
     public void run() {
-        try {
+        try(Store store = new MBTilesStore("batch-convert/target/osmgeo.mbtiles"))  {
             Capabilities capabilities = getCapabilities();
             Capabilities.TileMatrixSet tileMatrixSet = capabilities.Contents.getTileMatrixSetByCRS(Pattern.compile(".*:" + Epsg.WGS84.code + "$"));
             Transform transform = new Transform(tileMatrixSet);
-
             for (int z = 0; z <= 9; z++) {
                 layer = z;
 
@@ -56,13 +58,7 @@ public class Convert implements Runnable {
                     for (int y = topLeftSlippy.y; y <= bottomRightSlippy.y; y++) {
                         SlippyTile slippyTile = new SlippyTile(z + 6, x, y);
                         Image slippy = generateTile(tileMatrixSet, transform, slippyTile);
-                        File dir = new File("batch-convert/target/osmgeo/" + slippyTile.z + "/" + slippyTile.x + "/");
-                        dir.mkdirs();
-                        File output = new File(dir, slippyTile.y + "." + EXT);
-//                        if (output.exists() && output.length() > 0) {
-//                            continue;
-//                        }
-                        ImageIO.write((RenderedImage) slippy, EXT, output);
+                        store.save(slippyTile, slippy);
                     }
                 }
             }
