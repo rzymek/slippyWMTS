@@ -28,7 +28,6 @@ public class MBTilesStore implements Store {
             }
             statement.close();
         }
-        connection.setAutoCommit(false);
         insert = connection.prepareStatement("insert or replace into tiles(zoom_level, tile_column, tile_row, tile_data) values (?,?,?,?)");
         select = connection.prepareStatement("select exists(select 1 from tiles where zoom_level=? and tile_column=? and tile_row=?)");
     }
@@ -79,16 +78,15 @@ public class MBTilesStore implements Store {
 
     @Override
     public void close() throws Exception {
-        insert.close();
-        select.close();
         try (Statement statement = connection.createStatement()) {
             statement.execute("delete from tiles where tile_data is null");
-            statement.execute("analyze");
         }
         connection.close();
 
-        try(Connection connection = DriverManager.getConnection("jdbc:sqlite:" + dbfile)){
-            connection.createStatement().execute("vacuum");
+        try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + dbfile)) {
+            Statement statement = connection.createStatement();
+            statement.execute("analyze");
+            statement.execute("vacuum");
         }
     }
 }

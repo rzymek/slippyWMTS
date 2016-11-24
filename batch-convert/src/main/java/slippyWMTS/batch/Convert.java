@@ -43,7 +43,7 @@ public class Convert implements Runnable {
             Capabilities capabilities = getCapabilities();
             Capabilities.TileMatrixSet tileMatrixSet = capabilities.Contents.getTileMatrixSetByCRS(Pattern.compile(".*:" + Epsg.WGS84.code + "$"));
             Transform transform = new Transform(tileMatrixSet);
-            for (int z = 0; z <= 3; z++) {
+            for (int z = 0; z <= 9; z++) {
                 layer = z;
 
                 LonLat topLeft = new LonLat(14.1400, 55.9500);
