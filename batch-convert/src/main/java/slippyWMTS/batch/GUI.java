@@ -7,7 +7,6 @@ import java.io.File;
 public class GUI extends JFrame implements Runnable {
 
     private static final int MAX_LINES = 10000;
-    private static final int GET_LAYERS = 6;//10;
     private JTextArea log;
     private Thread thread;
 
@@ -22,17 +21,14 @@ public class GUI extends JFrame implements Runnable {
     }
 
     protected void showError(final String string) {
-        EventQueue.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                log.append(string);
-                log.append("\n");
-                if (log.getLineCount() > MAX_LINES) {
-                    final String text = log.getText();
-                    log.setText(text.substring(text.length() / 2));
-                }
-
+        EventQueue.invokeLater(() -> {
+            log.append(string);
+            log.append("\n");
+            if (log.getLineCount() > MAX_LINES) {
+                final String text = log.getText();
+                log.setText(text.substring(text.length() / 2));
             }
+
         });
     }
 

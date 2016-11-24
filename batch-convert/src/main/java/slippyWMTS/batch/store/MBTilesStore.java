@@ -5,11 +5,13 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
 import slippyWMTS.tile.SlippyTile;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.image.RenderedImage;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 
 public class MBTilesStore implements Store {
     public static final String FORMAT_NAME = "jpg";
@@ -35,17 +37,18 @@ public class MBTilesStore implements Store {
     }
 
     @Override
-    public void save(SlippyTile slippyTile, Image slippy) throws Exception {
+    public void save(SlippyTile slippyTile, BufferedImage slippy) throws Exception {
         insert.setInt(1, slippyTile.z);
         insert.setInt(2, slippyTile.x);
         int y = (int) ((Math.pow(2, slippyTile.z) - 1) - slippyTile.y);
         insert.setInt(3, y);
         try (ByteArrayOutputStream buf = new ByteArrayOutputStream()) {
-            ImageIO.write((RenderedImage) slippy, FORMAT_NAME, buf);
+            ImageIO.write(slippy, FORMAT_NAME, buf);
             insert.setBytes(4, buf.toByteArray());
         }
         insert.execute();
     }
+//delete from tiles where hex(tile_data) in (select hex(tile_data) from tiles group by tile_data having count(*) > 1);
 
     @Override
     public void close() throws Exception {

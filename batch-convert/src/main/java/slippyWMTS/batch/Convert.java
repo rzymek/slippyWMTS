@@ -5,19 +5,16 @@ import slippyWMTS.TileTranformation;
 import slippyWMTS.Transform;
 import slippyWMTS.area.TileBox;
 import slippyWMTS.batch.store.FileStore;
-import slippyWMTS.batch.store.MBTilesStore;
 import slippyWMTS.batch.store.Store;
+import slippyWMTS.batch.utils.ImageUtils;
 import slippyWMTS.capabilities.xml.Capabilities;
 import slippyWMTS.position.DoubleXY;
 import slippyWMTS.position.LonLat;
 import slippyWMTS.tile.SlippyTile;
 import slippyWMTS.tile.WmtsTile;
 
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.RenderedImage;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
@@ -28,7 +25,6 @@ import java.util.regex.Pattern;
 import static java.awt.image.BufferedImage.TYPE_INT_RGB;
 
 public class Convert implements Runnable {
-    private static final String EXT = "jpg";
     private int percent;
     private int layer;
 
@@ -40,11 +36,13 @@ public class Convert implements Runnable {
 
 
     public void run() {
-        try(Store store = new MBTilesStore("batch-convert/target/osmgeo.mbtiles"))  {
+        try(Store store =
+                    new FileStore("batch-convert/target/osmgeo/")){
+            //new MBTilesStore("batch-convert/target/osmgeo.mbtiles"))  {
             Capabilities capabilities = getCapabilities();
             Capabilities.TileMatrixSet tileMatrixSet = capabilities.Contents.getTileMatrixSetByCRS(Pattern.compile(".*:" + Epsg.WGS84.code + "$"));
             Transform transform = new Transform(tileMatrixSet);
-            for (int z = 0; z <= 2; z++) {
+            for (int z = 0; z <= 3; z++) {
                 layer = z;
 
                 LonLat topLeft = new LonLat(14.1400, 55.9500);
@@ -57,7 +55,11 @@ public class Convert implements Runnable {
                     progress(getProgressMsg());
                     for (int y = topLeftSlippy.y; y <= bottomRightSlippy.y; y++) {
                         SlippyTile slippyTile = new SlippyTile(z + 6, x, y);
-                        Image slippy = generateTile(tileMatrixSet, transform, slippyTile);
+                        BufferedImage slippy = generateTile(tileMatrixSet, transform, slippyTile);
+                        if(ImageUtils.isBlank(slippy)){
+                            progress("Slip empty"+slippyTile);
+                            continue;
+                        }
                         store.save(slippyTile, slippy);
                     }
                 }
@@ -86,7 +88,7 @@ public class Convert implements Runnable {
         );
     }
 
-    private Image compose(List<Composition> compositions, TileBox<DoubleXY> cropBox) {
+    private BufferedImage compose(List<Composition> compositions, TileBox<DoubleXY> cropBox) {
         BufferedImage buf = new BufferedImage((int) cropBox.bottomRight.x, (int) cropBox.bottomRight.y, TYPE_INT_RGB);
         Graphics2D g = buf.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
@@ -121,7 +123,7 @@ public class Convert implements Runnable {
         }
     }
 
-    private Image generateTile(Capabilities.TileMatrixSet tileMatrixSet, Transform transform, SlippyTile slippyTile) throws IOException {
+    private BufferedImage generateTile(Capabilities.TileMatrixSet tileMatrixSet, Transform transform, SlippyTile slippyTile) throws IOException {
         TileTranformation tileTranformation = transform.transformAndCrop(slippyTile);
         TileBox<WmtsTile> tileBox = tileTranformation.wmtsBox;
         final int startX = (int) tileBox.topLeft.x;
