@@ -2,7 +2,6 @@ package slippyWMTS.batch;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
 
 public class GUI extends JFrame implements Runnable {
 

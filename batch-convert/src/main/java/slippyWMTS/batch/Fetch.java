@@ -11,15 +11,18 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
-import java.io.*;
-import java.net.MalformedURLException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
-
-import static java.awt.image.BufferedImage.TYPE_INT_RGB;
 
 public class Fetch {
     private static final int AVG_TILE_SIZE = 33000;
@@ -112,11 +115,12 @@ public class Fetch {
         return download(getTile);
     }
 
-    private BufferedImage download(URL getTile) throws IOException {
-        try (final InputStream in = open(getTile)) {
+    private BufferedImage download(URL url) throws IOException {
+        try (final InputStream in = open(url)) {
+            System.out.println(url);
             return readImage(in);
         } catch (IOException ex) {
-            throw new IOException(getTile.toString(), ex);
+            throw new IOException(url.toString(), ex);
         }
     }
 

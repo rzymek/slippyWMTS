@@ -5,6 +5,7 @@ import slippyWMTS.TileTranformation;
 import slippyWMTS.Transform;
 import slippyWMTS.area.TileBox;
 import slippyWMTS.batch.store.FileStore;
+import slippyWMTS.batch.store.MBTilesStore;
 import slippyWMTS.batch.store.Store;
 import slippyWMTS.batch.utils.ImageUtils;
 import slippyWMTS.capabilities.xml.Capabilities;
@@ -37,8 +38,8 @@ public class Convert implements Runnable {
 
     public void run() {
         try(Store store =
-                    new FileStore("batch-convert/target/osmgeo/")){
-            //new MBTilesStore("batch-convert/target/osmgeo.mbtiles"))  {
+//                    new FileStore("batch-convert/target/osmgeo/")){
+            new MBTilesStore("batch-convert/target/osmgeo.mbtiles"))  {
             Capabilities capabilities = getCapabilities();
             Capabilities.TileMatrixSet tileMatrixSet = capabilities.Contents.getTileMatrixSetByCRS(Pattern.compile(".*:" + Epsg.WGS84.code + "$"));
             Transform transform = new Transform(tileMatrixSet);
@@ -55,15 +56,19 @@ public class Convert implements Runnable {
                     progress(getProgressMsg());
                     for (int y = topLeftSlippy.y; y <= bottomRightSlippy.y; y++) {
                         SlippyTile slippyTile = new SlippyTile(z + 6, x, y);
-                        BufferedImage slippy = generateTile(tileMatrixSet, transform, slippyTile);
-                        if(ImageUtils.isBlank(slippy)){
-                            progress("Slip empty"+slippyTile);
+                        if(store.exists(slippyTile)) {
                             continue;
                         }
-                        store.save(slippyTile, slippy);
+                        BufferedImage slippy = generateTile(tileMatrixSet, transform, slippyTile);
+                        if(ImageUtils.isBlank(slippy)){
+                            store.saveEmpty(slippyTile);
+                        }else {
+                            store.save(slippyTile, slippy);
+                        }
                     }
                 }
             }
+            progress("Cleaning up");
         } catch (Exception ex) {
             handleError(ex);
         }

@@ -18,10 +18,24 @@ public class FileStore implements Store {
 
     @Override
     public void save(SlippyTile slippyTile, BufferedImage slippy) throws IOException {
-        File dir = new File(baseDir, slippyTile.z + "/" + slippyTile.x + "/");
-        dir.mkdirs();
-        File output = new File(dir, slippyTile.y + "." + EXT);
-        ImageIO.write(slippy, EXT, output);
+        File file = toFile(slippyTile);
+        file.getParentFile().mkdirs();
+        ImageIO.write(slippy, EXT, file);
+    }
+
+    private File toFile(SlippyTile slippyTile) {
+        return new File(baseDir, slippyTile.z + "/" + slippyTile.x + "/" + slippyTile.y + "." + EXT);
+    }
+
+    @Override
+    public boolean exists(SlippyTile tile) {
+        boolean exists = toFile(tile).exists();
+        return exists;
+    }
+
+    @Override
+    public void saveEmpty(SlippyTile tile) throws Exception {
+        toFile(tile).createNewFile();
     }
 
     @Override

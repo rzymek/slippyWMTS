@@ -8,26 +8,29 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.Statement;
+import java.sql.*;
 
 public class MBTilesStore implements Store {
     public static final String FORMAT_NAME = "jpg";
     private final Connection connection;
     private final PreparedStatement insert;
+    private final PreparedStatement select;
+    private String dbfile;
 
     public MBTilesStore(String dbfile) throws Exception {
+        this.dbfile = dbfile;
         connection = DriverManager.getConnection("jdbc:sqlite:" + dbfile);
-        Statement statement = connection.createStatement();
-        statement.setQueryTimeout(30);  // set timeout to 30 sec.
-        String[] sql = getDDL().split(";");
-        for (String expr : sql) {
-            statement.execute(expr);
+        connection.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+        try (Statement statement = connection.createStatement()) {
+            String[] sql = getDDL().split(";");
+            for (String expr : sql) {
+                statement.execute(expr);
+            }
+            statement.close();
         }
-        statement.close();
+        connection.setAutoCommit(false);
         insert = connection.prepareStatement("insert or replace into tiles(zoom_level, tile_column, tile_row, tile_data) values (?,?,?,?)");
+        select = connection.prepareStatement("select exists(select 1 from tiles where zoom_level=? and tile_column=? and tile_row=?)");
     }
 
     private String getDDL() throws IOException {
@@ -38,20 +41,54 @@ public class MBTilesStore implements Store {
 
     @Override
     public void save(SlippyTile slippyTile, BufferedImage slippy) throws Exception {
-        insert.setInt(1, slippyTile.z);
-        insert.setInt(2, slippyTile.x);
-        int y = (int) ((Math.pow(2, slippyTile.z) - 1) - slippyTile.y);
-        insert.setInt(3, y);
+        setPositionParams(insert, slippyTile);
         try (ByteArrayOutputStream buf = new ByteArrayOutputStream()) {
             ImageIO.write(slippy, FORMAT_NAME, buf);
             insert.setBytes(4, buf.toByteArray());
         }
         insert.execute();
     }
-//delete from tiles where hex(tile_data) in (select hex(tile_data) from tiles group by tile_data having count(*) > 1);
+
+    private PreparedStatement setPositionParams(PreparedStatement statement, SlippyTile tile) throws SQLException {
+        statement.setInt(1, tile.z);
+        statement.setInt(2, tile.x);
+        statement.setInt(3, getTmsY(tile));
+        return statement;
+    }
+
+    private int getTmsY(SlippyTile slippyTile) {
+        return (int) ((Math.pow(2, slippyTile.z) - 1) - slippyTile.y);
+    }
+
+    @Override
+    public boolean exists(SlippyTile tile) throws SQLException {
+        ResultSet rs = setPositionParams(select, tile)
+                .executeQuery();
+        rs.next();
+        return rs.getBoolean(1);
+
+    }
+
+    @Override
+    public void saveEmpty(SlippyTile tile) throws Exception {
+        setPositionParams(insert, tile);
+        insert.setNull(4, Types.BLOB);
+        insert.execute();
+
+    }
 
     @Override
     public void close() throws Exception {
+        insert.close();
+        select.close();
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("delete from tiles where tile_data is null");
+            statement.execute("analyze");
+        }
         connection.close();
+
+        try(Connection connection = DriverManager.getConnection("jdbc:sqlite:" + dbfile)){
+            connection.createStatement().execute("vacuum");
+        }
     }
 }
