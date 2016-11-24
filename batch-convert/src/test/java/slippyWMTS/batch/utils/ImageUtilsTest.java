@@ -1,7 +1,6 @@
 package slippyWMTS.batch.utils;
 
 import javafx.util.Pair;
-import org.hamcrest.Matchers;
 import org.junit.Test;
 import rx.Observable;
 import rx.exceptions.Exceptions;
@@ -11,21 +10,25 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.Matchers.everyItem;
-import static org.hamcrest.Matchers.hasProperty;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class ImageUtilsTest {
 
     @Test
     public void blank() throws Exception {
-        Observable.just("/tiles/blank")
+        assertInDir("/tiles/blank", true);
+    }
+
+    @Test
+    public void full() throws Exception {
+        assertInDir("/tiles/full", false);
+    }
+
+    private void assertInDir(String dir, boolean expected) {
+        Observable.just(dir)
                 .map(ImageUtilsTest.class::getResource)
                 .map(res -> checked(() -> res.toURI()))
                 .map(uri -> checked(() -> Paths.get(uri)))
@@ -39,7 +42,7 @@ public class ImageUtilsTest {
                     assertThat(
                             list.stream().map(String::valueOf).collect(Collectors.joining("\n")),
                             list,
-                            everyItem(hasProperty("value", is(true)))
+                            everyItem(hasProperty("value", is(expected)))
                     );
                 });
     }
