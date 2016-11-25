@@ -4,7 +4,6 @@ import slippyWMTS.Epsg;
 import slippyWMTS.TileTranformation;
 import slippyWMTS.Transform;
 import slippyWMTS.area.TileBox;
-import slippyWMTS.batch.store.FileStore;
 import slippyWMTS.batch.store.MBTilesStore;
 import slippyWMTS.batch.store.Store;
 import slippyWMTS.batch.utils.ImageUtils;
@@ -18,6 +17,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
@@ -26,8 +26,24 @@ import java.util.regex.Pattern;
 import static java.awt.image.BufferedImage.TYPE_INT_RGB;
 
 public class Convert implements Runnable {
+    private final String endpoint;
+    private final Capabilities capabilities;
     private int percent;
     private int layer;
+
+    public Convert() {
+        String type = "TOPO";
+//        String type = "ORTO";
+        endpoint = "http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/" + type;
+        //http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/ISOK_CIEN
+        //http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/BDO
+//        endpoint = "http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/BDO";
+        try {
+            capabilities = Fetch.getCapabilities(new URL(endpoint));
+        } catch (IOException e) {
+            throw new RuntimeException(endpoint, e);
+        }
+    }
 
     private Capabilities getCapabilities() throws IOException {
         try (InputStream in = Convert.class.getResourceAsStream("/cap.xml")) {
@@ -37,10 +53,9 @@ public class Convert implements Runnable {
 
 
     public void run() {
-        try(Store store =
-//                    new FileStore("batch-convert/target/osmgeo/")){
-            new MBTilesStore("batch-convert/target/osmgeo.mbtiles"))  {
-            Capabilities capabilities = getCapabilities();
+        try (Store store =
+//                     new FileStore("batch-convert/target/png1/")) {
+                     new MBTilesStore("batch-convert/target/osmgeo.mbtiles")) {
             Capabilities.TileMatrixSet tileMatrixSet = capabilities.Contents.getTileMatrixSetByCRS(Pattern.compile(".*:" + Epsg.WGS84.code + "$"));
             Transform transform = new Transform(tileMatrixSet);
             for (int z = 0; z <= 9; z++) {
@@ -56,13 +71,15 @@ public class Convert implements Runnable {
                     progress(getProgressMsg());
                     for (int y = topLeftSlippy.y; y <= bottomRightSlippy.y; y++) {
                         SlippyTile slippyTile = new SlippyTile(z + 6, x, y);
-                        if(store.exists(slippyTile)) {
+                        if (store.exists(slippyTile)) {
                             continue;
                         }
                         BufferedImage slippy = generateTile(tileMatrixSet, transform, slippyTile);
-                        if(ImageUtils.isBlank(slippy)){
+                        if (slippy == null) {
+                            store.saveError(slippyTile);
+                        } else if (ImageUtils.isBlank(slippy)) {
                             store.saveEmpty(slippyTile);
-                        }else {
+                        } else {
                             store.save(slippyTile, slippy);
                         }
                     }
@@ -96,6 +113,8 @@ public class Convert implements Runnable {
     private BufferedImage compose(List<Composition> compositions, TileBox<DoubleXY> cropBox) {
         BufferedImage buf = new BufferedImage((int) cropBox.bottomRight.x, (int) cropBox.bottomRight.y, TYPE_INT_RGB);
         Graphics2D g = buf.createGraphics();
+        g.setColor(Color.WHITE);
+        g.fillRect(0, 0, buf.getWidth(), buf.getHeight());
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
         compositions.stream().forEach(it -> {
             g.drawImage(it.image, it.pixelX, it.pixelY, null);
@@ -146,6 +165,9 @@ public class Convert implements Runnable {
                 int pixelY = row * tileHeight;
                 try {
                     BufferedImage image = getImage(wmtsTile);
+                    if (image == null) {
+                        return null;
+                    }
                     compositions.add(new Composition(image, pixelX, pixelY));
                 } catch (IndexOutOfBoundsException ex) {
                     continue;
@@ -162,17 +184,17 @@ public class Convert implements Runnable {
     private BufferedImage getImage(WmtsTile wmtsTile) throws IOException {
         BufferedImage cached = wmtsImages.get(wmtsTile.toString());
         if (cached == null) {
-            String type = "TOPO";
-            String endpoint = "http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/" + type;
             String set = ".*EPSG:.*:4326";
 
             Fetch fetch = layers.get(wmtsTile.z);
             if (fetch == null) {
-                fetch = new Fetch(endpoint, wmtsTile.z, set);
+                fetch = new Fetch(endpoint, wmtsTile.z, set, capabilities);
                 layers.put(wmtsTile.z, fetch);
             }
             cached = fetch.fetch(wmtsTile.getY(), wmtsTile.getX());
-            wmtsImages.put(wmtsTile.toString(), cached);
+            if (cached != null) {
+                wmtsImages.put(wmtsTile.toString(), cached);
+            }
         }
         return cached;
     }

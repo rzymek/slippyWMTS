@@ -71,15 +71,22 @@ public class MBTilesStore implements Store {
     @Override
     public void saveEmpty(SlippyTile tile) throws Exception {
         setPositionParams(insert, tile);
-        insert.setNull(4, Types.BLOB);
+        insert.setNull(4, Types.BLOB);//mark for removal
         insert.execute();
 
     }
 
     @Override
+    public void saveError(SlippyTile tile) throws SQLException {
+        setPositionParams(insert, tile);
+        insert.setBytes(4, new byte[0]);//mark for retry
+        insert.execute();
+    }
+
+    @Override
     public void close() throws Exception {
         try (Statement statement = connection.createStatement()) {
-            statement.execute("delete from tiles where tile_data is null");
+//            statement.execute("delete from tiles where tile_data is null");
         }
         connection.close();
 

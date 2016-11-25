@@ -1,6 +1,8 @@
 package slippyWMTS.batch;
 
 import com.google.common.io.Files;
+import rx.Observable;
+import slippyWMTS.batch.utils.RxUtils;
 import slippyWMTS.capabilities.xml.Capabilities;
 import slippyWMTS.capabilities.xml.Capabilities.Layer;
 import slippyWMTS.capabilities.xml.Capabilities.TileMatrixLimits;
@@ -22,6 +24,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 public class Fetch {
@@ -44,9 +47,10 @@ public class Fetch {
 
         }
     };
-    private Capabilities capabilities;
+    private final Capabilities capabilities;
 
-    public Fetch(String url, int z, String set) throws IOException {
+    public Fetch(String url, int z, String set, Capabilities capabilities) throws IOException {
+        this.capabilities = capabilities;
         this.url = new URL(url);
         this.z = z;
         this.set = set;
@@ -54,27 +58,25 @@ public class Fetch {
     }
 
 
-    public Capabilities getCapabilities() throws IOException {
-        if (capabilities != null)
-            return capabilities;
+    public static Capabilities getCapabilities(URL url) throws IOException {
         Map<String, String> params = new HashMap<>();
         params.put("SERVICE", "WMTS");
         params.put("REQUEST", "GetCapabilities");
         URL getCapabilities = UrlBuilder.createURL(url, params);
         try (InputStream in = open(getCapabilities)) {
-            return capabilities = Capabilities.parse(in);
+            return Capabilities.parse(in);
         }
     }
 
     private TileMatrixLimits getTileMatrix() throws IOException {
-        Capabilities capabilities = getCapabilities();
+        Capabilities capabilities = this.capabilities;
         layer = capabilities.Contents.Layer;
         tileMatrixSet = capabilities.Contents.getTileMatrixSetByCRS(Pattern.compile(set));
         final TileMatrixSetLink tileMatrixSetLink = layer.getTileMatrixSet(tileMatrixSet.Identifier);
         return tileMatrixSetLink.TileMatrixSetLimits.TileMatrixLimits[z];
     }
 
-    protected InputStream open(URL url) throws IOException {
+    protected static InputStream open(URL url) throws IOException {
         URLConnection conn = url.openConnection();
         conn.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.91 Safari/537.36");
         return conn.getInputStream();
@@ -112,15 +114,28 @@ public class Fetch {
         params.put("TILEROW", Integer.toString(row));
         params.put("TILECOL", Integer.toString(col));
         URL getTile = UrlBuilder.createURL(url, params);
-        return download(getTile);
+        return Observable.just(getTile)
+                .map(this::download)
+                .retry((iteration, ex) -> {
+                    if (iteration >= 10) {
+                        return false;
+                    } else {
+                        System.out.println(ex + ": Retrying in " + iteration + " sec.");
+                        RxUtils.sleep(iteration, TimeUnit.SECONDS);
+                        return true;
+                    }
+                })
+                .onErrorReturn(e -> null)
+                .toBlocking()
+                .first();
     }
 
-    private BufferedImage download(URL url) throws IOException {
+    private BufferedImage download(URL url) {
         try (final InputStream in = open(url)) {
             System.out.println(url);
             return readImage(in);
         } catch (IOException ex) {
-            throw new IOException(url.toString(), ex);
+            throw new RuntimeException(url.toString(), ex);
         }
     }
 

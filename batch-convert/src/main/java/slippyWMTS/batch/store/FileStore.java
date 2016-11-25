@@ -1,11 +1,13 @@
 package slippyWMTS.batch.store;
 
+import org.apache.commons.io.FileUtils;
 import slippyWMTS.tile.SlippyTile;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
 
 public class FileStore implements Store {
     private static final String EXT = "jpg";
@@ -18,9 +20,14 @@ public class FileStore implements Store {
 
     @Override
     public void save(SlippyTile slippyTile, BufferedImage slippy) throws IOException {
+        File file = toFileExt(slippyTile);
+        ImageIO.write(slippy, EXT, file);
+    }
+
+    private File toFileExt(SlippyTile slippyTile) {
         File file = toFile(slippyTile);
         file.getParentFile().mkdirs();
-        ImageIO.write(slippy, EXT, file);
+        return file;
     }
 
     private File toFile(SlippyTile slippyTile) {
@@ -35,7 +42,12 @@ public class FileStore implements Store {
 
     @Override
     public void saveEmpty(SlippyTile tile) throws Exception {
-        toFile(tile).createNewFile();
+        toFileExt(tile).createNewFile();
+    }
+
+    @Override
+    public void saveError(SlippyTile tile) throws Exception {
+        FileUtils.writeStringToFile(toFileExt(tile),"error");
     }
 
     @Override
