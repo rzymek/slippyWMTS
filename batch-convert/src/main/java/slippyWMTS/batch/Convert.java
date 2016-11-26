@@ -55,7 +55,8 @@ public class Convert implements Runnable {
     public void run() {
         try (Store store =
 //                     new FileStore("batch-convert/target/png1/")) {
-                     new MBTilesStore("batch-convert/target/osmgeo.mbtiles")) {
+                     new MBTilesStore("resultls" +
+                             ".mbtiles")) {
             Capabilities.TileMatrixSet tileMatrixSet = capabilities.Contents.getTileMatrixSetByCRS(Pattern.compile(".*:" + Epsg.WGS84.code + "$"));
             Transform transform = new Transform(tileMatrixSet);
             for (int z = 0; z <= 9; z++) {
@@ -197,5 +198,9 @@ public class Convert implements Runnable {
             }
         }
         return cached;
+    }
+
+    public static void main(String[] args) {
+        new Convert().run();
     }
 }
