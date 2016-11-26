@@ -36,8 +36,7 @@ public class FileStore implements Store {
 
     @Override
     public boolean exists(SlippyTile tile) {
-        boolean exists = toFile(tile).exists();
-        return exists;
+        return toFile(tile).exists();
     }
 
     @Override
