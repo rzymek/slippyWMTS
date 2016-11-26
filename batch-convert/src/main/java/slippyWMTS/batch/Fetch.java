@@ -1,6 +1,5 @@
 package slippyWMTS.batch;
 
-import com.google.common.io.Files;
 import rx.Observable;
 import slippyWMTS.batch.utils.RxUtils;
 import slippyWMTS.capabilities.xml.Capabilities;
@@ -13,13 +12,10 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -36,17 +32,6 @@ public class Fetch {
 
     private Layer layer;
     private TileMatrixSet tileMatrixSet;
-    public StatusListener status = new StatusListener() {
-        @Override
-        public void progress(double percent) {
-        }
-
-        @Override
-        public void text(String string) {
-            // TODO Auto-generated method stub
-
-        }
-    };
     private final Capabilities capabilities;
 
     public Fetch(String url, int z, String set, Capabilities capabilities) throws IOException {
@@ -80,16 +65,6 @@ public class Fetch {
         URLConnection conn = url.openConnection();
         conn.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.91 Safari/537.36");
         return conn.getInputStream();
-    }
-
-    public static String humanReadableByteCount(long bytes) {
-        boolean si = true;
-        int unit = si ? 1000 : 1024;
-        if (bytes < unit)
-            return bytes + " B";
-        int exp = (int) (Math.log(bytes) / Math.log(unit));
-        String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
-        return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
     }
 
     public BufferedImage fetch(int row, int col) throws IOException {
@@ -136,19 +111,6 @@ public class Fetch {
             return readImage(in);
         } catch (IOException ex) {
             throw new RuntimeException(url.toString(), ex);
-        }
-    }
-
-    protected void error(String msg) throws IOException {
-        Files.append(msg, new File("fetch.log"), StandardCharsets.UTF_8);
-    }
-
-    private void check(File file) throws IOException {
-        try (final InputStream is = new FileInputStream(file)) {
-            readImage(is);
-        } catch (IOException e) {
-            file.delete();
-            throw e;
         }
     }
 
