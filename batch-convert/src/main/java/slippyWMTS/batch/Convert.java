@@ -1,5 +1,9 @@
 package slippyWMTS.batch;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.MapMaker;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import slippyWMTS.Epsg;
 import slippyWMTS.TileTranformation;
 import slippyWMTS.Transform;
@@ -21,19 +25,20 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
 import static java.awt.image.BufferedImage.TYPE_INT_RGB;
 
 public class Convert implements Runnable {
+    //    private static final String type = "TOPO";
+    private static final String type = "ORTO";
     private final String endpoint;
     private final Capabilities capabilities;
     private int percent;
     private int layer;
 
     public Convert() {
-        String type = "TOPO";
-//        String type = "ORTO";
         endpoint = "http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/" + type;
         //http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/ISOK_CIEN
         //http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/BDO
@@ -45,17 +50,11 @@ public class Convert implements Runnable {
         }
     }
 
-    private Capabilities getCapabilities() throws IOException {
-        try (InputStream in = Convert.class.getResourceAsStream("/cap.xml")) {
-            return Capabilities.parse(in);
-        }
-    }
-
 
     public void run() {
         try (Store store =
 //                     new FileStore("result/")) {
-                     new MBTilesStore("result.mbtiles")) {
+                     new MBTilesStore(type.toLowerCase() + ".mbtiles")) {
             Capabilities.TileMatrixSet tileMatrixSet = capabilities.Contents.getTileMatrixSetByCRS(Pattern.compile(".*:" + Epsg.WGS84.code + "$"));
             Transform transform = new Transform(tileMatrixSet);
             for (int z = 0; z <= 9; z++) {
@@ -86,6 +85,7 @@ public class Convert implements Runnable {
                 }
             }
             progress("Cleaning up");
+            store.cleanup();
         } catch (Exception ex) {
             handleError(ex);
         }
@@ -147,7 +147,7 @@ public class Convert implements Runnable {
         }
     }
 
-    private BufferedImage generateTile(Capabilities.TileMatrixSet tileMatrixSet, Transform transform, SlippyTile slippyTile) throws IOException {
+    private BufferedImage generateTile(Capabilities.TileMatrixSet tileMatrixSet, Transform transform, SlippyTile slippyTile) throws Exception {
         TileTranformation tileTranformation = transform.transformAndCrop(slippyTile);
         TileBox<WmtsTile> tileBox = tileTranformation.wmtsBox;
         final int startX = (int) tileBox.topLeft.x;
@@ -171,6 +171,12 @@ public class Convert implements Runnable {
                     compositions.add(new Composition(image, pixelX, pixelY));
                 } catch (IndexOutOfBoundsException ex) {
                     continue;
+                }catch(UncheckedExecutionException ex){
+                    if(ex.getCause() instanceof IndexOutOfBoundsException) {
+                        continue;
+                    }else{
+                        throw ex;
+                    }
                 }
             }
         }
@@ -178,12 +184,11 @@ public class Convert implements Runnable {
     }
 
 
-    private static final WeakHashMap<String, BufferedImage> wmtsImages = new WeakHashMap<>();
+    private static final Cache<String, BufferedImage> wmtsImages = CacheBuilder.newBuilder().softValues().build();
     private static final Map<Integer, Fetch> layers = new HashMap<>();
 
-    private BufferedImage getImage(WmtsTile wmtsTile) throws IOException {
-        BufferedImage cached = wmtsImages.get(wmtsTile.toString());
-        if (cached == null) {
+    private BufferedImage getImage(WmtsTile wmtsTile) throws Exception {
+        return wmtsImages.get(wmtsTile.toString(), () -> {
             String set = ".*EPSG:.*:4326";
 
             Fetch fetch = layers.get(wmtsTile.z);
@@ -191,12 +196,12 @@ public class Convert implements Runnable {
                 fetch = new Fetch(endpoint, wmtsTile.z, set, capabilities);
                 layers.put(wmtsTile.z, fetch);
             }
-            cached = fetch.fetch(wmtsTile.getY(), wmtsTile.getX());
+            BufferedImage cached = fetch.fetch(wmtsTile.getY(), wmtsTile.getX());
             if (cached != null) {
                 wmtsImages.put(wmtsTile.toString(), cached);
             }
-        }
-        return cached;
+            return cached;
+        });
     }
 
     public static void main(String[] args) {

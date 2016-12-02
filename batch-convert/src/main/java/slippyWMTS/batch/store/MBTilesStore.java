@@ -2,6 +2,7 @@ package slippyWMTS.batch.store;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.sqlite.SQLiteConfig;
 import slippyWMTS.tile.SlippyTile;
 
 import javax.imageio.ImageIO;
@@ -84,16 +85,28 @@ public class MBTilesStore implements Store {
     }
 
     @Override
-    public void close() throws Exception {
+    public void cleanup() throws SQLException {
+
+        //13502420
         try (Statement statement = connection.createStatement()) {
-//            statement.execute("delete from tiles where tile_data is null");
+            statement.execute("delete from tiles where tile_data is null");
         }
+    }
+
+    @Override
+    public void close() throws Exception {
         connection.close();
 
-        try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + dbfile)) {
+        //13510040	topo.mbtiles
+        SQLiteConfig config = new SQLiteConfig();
+        config.setTempStoreDirectory(".");
+        config.setTempStore(SQLiteConfig.TempStore.FILE);
+        try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + dbfile, config.toProperties())) {
             Statement statement = connection.createStatement();
+            System.out.println("ANALYZE");
             statement.execute("analyze");
-            statement.execute("vacuum");
+            System.out.println("VACUUM");
+//            statement.execute("vacuum");
         }
     }
 }

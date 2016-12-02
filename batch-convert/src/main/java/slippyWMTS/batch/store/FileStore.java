@@ -50,6 +50,11 @@ public class FileStore implements Store {
     }
 
     @Override
+    public void cleanup() throws SQLException, Exception {
+
+    }
+
+    @Override
     public void close() throws Exception {
 
     }

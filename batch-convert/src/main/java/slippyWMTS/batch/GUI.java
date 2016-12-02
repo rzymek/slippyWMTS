@@ -10,7 +10,7 @@ public class GUI extends JFrame implements Runnable {
     private Thread thread;
 
     GUI() {
-        setTitle("geoportal conv");
+        setTitle("orto");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         Container pane = getContentPane();
         pane.setLayout(new BorderLayout());
