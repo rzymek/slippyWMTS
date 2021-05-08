@@ -22,7 +22,7 @@ public class TranformTest {
     // tile.openstreetmap.org/10/570/336.png
     TileBox<WmtsTile> out = transform.transform(in);
 
-    System.out.println(out);
+//    System.out.println(out);
     for (WmtsTile wmtsTile : out) {
       assertEquals(wmtsZ, wmtsTile.z);
       assertTrue("x>13.7", wmtsTile.x > 13.7);

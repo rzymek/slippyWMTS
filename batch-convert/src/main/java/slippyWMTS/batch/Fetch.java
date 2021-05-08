@@ -107,7 +107,7 @@ public class Fetch {
 
     private BufferedImage download(URL url) {
         try (final InputStream in = open(url)) {
-            System.out.println(url);
+//            System.out.println(url);
             return readImage(in);
         } catch (IOException ex) {
             throw new RuntimeException(url.toString(), ex);

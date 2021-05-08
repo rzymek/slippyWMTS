@@ -106,8 +106,7 @@ public class Fetch {
         error(downloadDir + ":" + z + "   tiles=" + total + " -> " + humanReadableByteCount(total * AVG_TILE_SIZE));
         for (int row = limits.MinTileRow; row <= limits.MaxTileRow; row++) {
             int percent = row * 1000 / Math.max(1, limits.MaxTileRow - limits.MinTileRow);
-//			System.err.println("["+globalProgress+"] "+percent+"%%");
-//			System.out.println("echo '["+globalProgress+"] "+percent+"%%'");
+//			System.err.println("["+globalProgress+"] "+percent+"%");
             for (int col = limits.MinTileCol; col <= limits.MaxTileCol; col++) {
                 try {
                     fetch(row, col);
@@ -155,7 +154,7 @@ public class Fetch {
                 //fetch again
             }
         }
-        System.out.println(getTile);
+//        System.out.println(getTile);
         status.text(filename);
         try (final InputStream in = open(getTile)) {
             ReadableByteChannel rbc = Channels.newChannel(in);
@@ -211,12 +210,24 @@ public class Fetch {
 //				".*EPSG:.*:2180",
                 ".*EPSG:.*:4326"
         };
-        System.out.println("#/bin/sh");
+        StatusListener consoleStatus = new StatusListener() {
+            @Override
+            public void progress(double percent) {
+                System.out.println(" " + (int)(100*percent)+"%");
+            }
+
+            @Override
+            public void text(String string) {
+                System.out.print(string);
+            }
+        };
         for (String set : sets) {
             for (int i = 0; i <= 10; i++) {
                 System.out.println();
                 globalProgress = i + "/" + 10;
-                new Fetch(endpoint, i, set, "wmts_"+type).fetch();
+                Fetch fetch = new Fetch(endpoint, i, set, "wmts_" + type);
+                fetch.status = consoleStatus;
+                fetch.fetch();
             }
         }
     }
