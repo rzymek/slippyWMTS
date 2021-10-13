@@ -1,5 +1,7 @@
 FROM openjdk:8-alpine
-WORKDIR /app
-COPY mirror/target/mirror-1.3.jar /app/mirror.jar
-VOLUME /app/wmts_TOPO
-CMD ["java","-jar","mirror.jar"]
+#COPY mirror/target/mirror-1.3.jar /app/mirror.jar
+WORKDIR /app/output
+COPY batch-convert/target/batch-convert-1.3.jar /app/app.jar
+VOLUME /app/output
+CMD ["java","-Xmx150m", "-jar","/app/app.jar"]
+

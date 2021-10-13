@@ -2,7 +2,6 @@ package slippyWMTS.batch;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.MapMaker;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import slippyWMTS.Epsg;
 import slippyWMTS.TileTranformation;
@@ -20,19 +19,17 @@ import slippyWMTS.tile.WmtsTile;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.text.SimpleDateFormat;
-import java.util.*;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import static java.awt.image.BufferedImage.TYPE_INT_RGB;
 
 public class Convert implements Runnable {
-    //    private static final String type = "TOPO";
-    private static final String type = "ORTO";
+        private static final String type = "TOPO";
+//    private static final String type = "ORTO";
     private final String endpoint;
     private final Capabilities capabilities;
     private int percent;
@@ -100,6 +97,7 @@ public class Convert implements Runnable {
     private SimpleDateFormat format = new SimpleDateFormat("HH:mm.ss");
 
     protected void progress(String s) {
+        System.out.println(s);
     }
 
     private String getProgressMsg() {
