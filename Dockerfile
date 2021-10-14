@@ -3,5 +3,6 @@ FROM openjdk:8-alpine
 WORKDIR /app/output
 COPY batch-convert/target/batch-convert-1.3.jar /app/app.jar
 VOLUME /app/output
-CMD ["java","-Xmx150m", "-jar","/app/app.jar"]
+ENTRYPOINT [ "java","-Xmx150m", "-jar","/app/app.jar"]
+
 

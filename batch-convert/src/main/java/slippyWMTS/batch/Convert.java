@@ -28,15 +28,13 @@ import java.util.regex.Pattern;
 import static java.awt.image.BufferedImage.TYPE_INT_RGB;
 
 public class Convert implements Runnable {
-        private static final String type = "TOPO";
-//    private static final String type = "ORTO";
     private final String endpoint;
     private final Capabilities capabilities;
     private int percent;
     private int layer;
 
     public Convert() {
-        endpoint = "http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/" + type;
+        endpoint = "http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/TOPO";
         //http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/ISOK_CIEN
         //http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/BDO
 //        endpoint = "http://mapy.geoportal.gov.pl/wss/service/WMTS/guest/wmts/BDO";
@@ -49,9 +47,7 @@ public class Convert implements Runnable {
 
 
     public void run() {
-        try (Store store =
-//                     new FileStore("result/")) {
-                     new MBTilesStore(type.toLowerCase() + ".mbtiles")) {
+        try (Store store = new MBTilesStore("topo.mbtiles")) {
             Capabilities.TileMatrixSet tileMatrixSet = capabilities.Contents.getTileMatrixSetByCRS(Pattern.compile(".*:" + Epsg.WGS84.code + "$"));
             Transform transform = new Transform(tileMatrixSet);
             for (int z = 0; z <= 9; z++) {
@@ -102,9 +98,9 @@ public class Convert implements Runnable {
 
     private String getProgressMsg() {
         return String.format("[%s][%d][% 3d%%]",
-                format.format(new Date()),
-                layer,
-                percent
+            format.format(new Date()),
+            layer,
+            percent
         );
     }
 
@@ -122,10 +118,10 @@ public class Convert implements Runnable {
         double w = cropBox.bottomRight.x - x;
         double h = cropBox.bottomRight.y - y;
         BufferedImage cropped = buf.getSubimage(
-                (int) x,
-                (int) y,
-                (int) w,
-                (int) h);
+            (int) x,
+            (int) y,
+            (int) w,
+            (int) h);
         BufferedImage slippy = new BufferedImage(256, 256, BufferedImage.TYPE_INT_RGB);
         Graphics2D g2 = slippy.createGraphics();
         g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
@@ -169,10 +165,10 @@ public class Convert implements Runnable {
                     compositions.add(new Composition(image, pixelX, pixelY));
                 } catch (IndexOutOfBoundsException ex) {
                     continue;
-                }catch(UncheckedExecutionException ex){
-                    if(ex.getCause() instanceof IndexOutOfBoundsException) {
+                } catch (UncheckedExecutionException ex) {
+                    if (ex.getCause() instanceof IndexOutOfBoundsException) {
                         continue;
-                    }else{
+                    } else {
                         throw ex;
                     }
                 }
