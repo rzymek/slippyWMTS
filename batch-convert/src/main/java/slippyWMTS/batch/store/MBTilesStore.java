@@ -25,7 +25,9 @@ public class MBTilesStore implements Store {
         try (Statement statement = connection.createStatement()) {
             String[] sql = getDDL(name, type).split(";");
             for (String expr : sql) {
-                System.out.println(expr);
+                if (expr.trim().isEmpty()) {
+                    continue;
+                }
                 statement.execute(expr);
             }
         }
@@ -116,6 +118,7 @@ public class MBTilesStore implements Store {
 //            statement.execute("vacuum");
         }
     }
+
     public enum Type {
         overlay,
         baselayer

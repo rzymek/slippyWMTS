@@ -29,11 +29,9 @@ public class ZWLTiles {
         LonLat topLeft = new LonLat(14.1400, 55.9500);
         LonLat bottomRight = new LonLat(24.1600, 49.0300);
         try (Store store =
-//                 new MBTilesStore("zanocuj-w-lesie.mbtiles","Zanocuj w lesie", MBTilesStore.Type.overlay)
-                 new FileStore("output")
+                 new MBTilesStore("zanocuj-w-lesie.mbtiles","Zanocuj w lesie", MBTilesStore.Type.overlay)
         ) {
-//            int layers = 6;
-            int layers = 0;
+            int layers = 6;
             for (int z = 0; z <= layers; z++) {
                 SlippyTile topLeftSlippy = new SlippyTile(topLeft, z + 6);
                 SlippyTile bottomRightSlippy = new SlippyTile(bottomRight, z + 6);

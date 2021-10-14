@@ -1,6 +1,8 @@
 package slippyWMTS.zanocuj_w_lesie;
 
-import org.apache.commons.io.IOUtils;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import rx.Observable;
 import slippyWMTS.batch.UrlBuilder;
 import slippyWMTS.batch.utils.RxUtils;
@@ -14,7 +16,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -31,14 +32,17 @@ public class FetchImg {
     static final int WGS_84_WEB_MERCATOR = 102100;
     static final int SR = WGS_84_WEB_MERCATOR;
     URL url = new URL("https://mapserver.bdl.lasy.gov.pl/ArcGIS/rest/services/Mapa_turystyczna/MapServer/export");
+    final OkHttpClient client = new OkHttpClient();
 
     public FetchImg() throws MalformedURLException {
     }
 
-    protected static InputStream open(URL url) throws IOException {
-        URLConnection conn = url.openConnection();
-        conn.setRequestProperty("Referer", "https://www.bdl.lasy.gov.pl/");
-        return conn.getInputStream();
+    protected byte[] open(URL url) throws IOException {
+        try (Response resp = client.newCall(new Request.Builder()
+            .url(url).get().header("Referer", "https://www.bdl.lasy.gov.pl/")
+            .build()).execute()) {
+            return resp.body().bytes();
+        }
     }
 
     public byte[] fetch(double left, double bottom, double right, double top) throws IOException {
@@ -70,9 +74,9 @@ public class FetchImg {
     }
 
     private byte[] download(URL url) {
-        try (final InputStream in = open(url)) {
+        try {
             log(url);
-            byte[] bytes = IOUtils.toByteArray(in);
+            byte[] bytes = open(url);
             readImage(new ByteArrayInputStream(bytes));
             return bytes;
         } catch (IOException ex) {
