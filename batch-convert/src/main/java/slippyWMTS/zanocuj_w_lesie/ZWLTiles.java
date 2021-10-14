@@ -3,10 +3,13 @@ package slippyWMTS.zanocuj_w_lesie;
 import slippyWMTS.batch.store.FileStore;
 import slippyWMTS.batch.store.MBTilesStore;
 import slippyWMTS.batch.store.Store;
+import slippyWMTS.batch.utils.ImageUtils;
 import slippyWMTS.batch.utils.MercatorTransform;
 import slippyWMTS.position.LonLat;
 import slippyWMTS.tile.SlippyTile;
 
+import javax.imageio.ImageIO;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 
@@ -22,27 +25,15 @@ public class ZWLTiles {
     public ZWLTiles() throws MalformedURLException {
     }
 
-    void run1() throws Exception {
-        FetchImg fetch = new FetchImg();
-        int i = 5;
-        try (Store store =
-                 new MBTilesStore("zanocuj-w-lesie-" + i + ".mbtiles")
-        ) {
-            byte[] data = fetch.fetch(left, bottom, right, top);
-            LonLat topLeft = MercatorTransform.inverse(left, top);
-            System.out.println(topLeft);
-            store.save(new SlippyTile(topLeft, i), data);
-        }
-    }
-
     void run() throws Exception {
         LonLat topLeft = new LonLat(14.1400, 55.9500);
         LonLat bottomRight = new LonLat(24.1600, 49.0300);
         try (Store store =
-                 new MBTilesStore("zanocuj-w-lesie.mbtiles")
-//                 new FileStore("output")
+//                 new MBTilesStore("zanocuj-w-lesie.mbtiles","Zanocuj w lesie", MBTilesStore.Type.overlay)
+                 new FileStore("output")
         ) {
-            int layers = 6;
+//            int layers = 6;
+            int layers = 0;
             for (int z = 0; z <= layers; z++) {
                 SlippyTile topLeftSlippy = new SlippyTile(topLeft, z + 6);
                 SlippyTile bottomRightSlippy = new SlippyTile(bottomRight, z + 6);
@@ -78,7 +69,11 @@ public class ZWLTiles {
     }
 
     private boolean isBlank(byte[] slippy) {
-        return false;
+        try {
+            return ImageUtils.isFullyTransparent(ImageIO.read(new ByteArrayInputStream(slippy)));
+        } catch (IOException e) {
+            return true;
+        }
     }
 
     public static void main(String[] args) throws Exception {

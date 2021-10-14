@@ -16,26 +16,28 @@ public class MBTilesStore implements Store {
     private final Connection connection;
     private final PreparedStatement insert;
     private final PreparedStatement select;
-    private String dbfile;
+    private final String dbfile;
 
-    public MBTilesStore(String dbfile) throws Exception {
+    public MBTilesStore(String dbfile, String name, Type type) throws Exception {
         this.dbfile = dbfile;
         connection = DriverManager.getConnection("jdbc:sqlite:" + dbfile);
         connection.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
         try (Statement statement = connection.createStatement()) {
-            String[] sql = getDDL().split(";");
+            String[] sql = getDDL(name, type).split(";");
             for (String expr : sql) {
+                System.out.println(expr);
                 statement.execute(expr);
             }
-            statement.close();
         }
         insert = connection.prepareStatement("insert or replace into tiles(zoom_level, tile_column, tile_row, tile_data) values (?,?,?,?)");
         select = connection.prepareStatement("select exists(select 1 from tiles where zoom_level=? and tile_column=? and tile_row=?)");
     }
 
-    private String getDDL() throws IOException {
+    private String getDDL(String name, Type type) throws IOException {
         try (InputStream in = MBTilesStore.class.getResourceAsStream("/mbtiles-ddl.sql")) {
-            return IOUtils.toString(in);
+            return IOUtils.toString(in)
+                .replace("%NAME%", name)
+                .replace("%TYPE%", type.name());
         }
     }
 
@@ -68,7 +70,7 @@ public class MBTilesStore implements Store {
     @Override
     public boolean exists(SlippyTile tile) throws SQLException {
         ResultSet rs = setPositionParams(select, tile)
-                .executeQuery();
+            .executeQuery();
         rs.next();
         return rs.getBoolean(1);
 
@@ -113,5 +115,9 @@ public class MBTilesStore implements Store {
             System.out.println("VACUUM");
 //            statement.execute("vacuum");
         }
+    }
+    public enum Type {
+        overlay,
+        baselayer
     }
 }

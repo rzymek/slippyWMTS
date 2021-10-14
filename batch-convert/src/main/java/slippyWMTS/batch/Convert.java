@@ -47,7 +47,7 @@ public class Convert implements Runnable {
 
 
     public void run() {
-        try (Store store = new MBTilesStore("topo.mbtiles")) {
+        try (Store store = new MBTilesStore("topo.mbtiles","topo", MBTilesStore.Type.baselayer)) {
             Capabilities.TileMatrixSet tileMatrixSet = capabilities.Contents.getTileMatrixSetByCRS(Pattern.compile(".*:" + Epsg.WGS84.code + "$"));
             Transform transform = new Transform(tileMatrixSet);
             for (int z = 0; z <= 9; z++) {

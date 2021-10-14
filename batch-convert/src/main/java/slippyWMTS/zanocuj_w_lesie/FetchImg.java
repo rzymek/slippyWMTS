@@ -1,5 +1,6 @@
 package slippyWMTS.zanocuj_w_lesie;
 
+import org.apache.commons.io.IOUtils;
 import rx.Observable;
 import slippyWMTS.batch.UrlBuilder;
 import slippyWMTS.batch.utils.RxUtils;
@@ -71,7 +72,7 @@ public class FetchImg {
     private byte[] download(URL url) {
         try (final InputStream in = open(url)) {
             log(url);
-            byte[] bytes = in.readAllBytes();
+            byte[] bytes = IOUtils.toByteArray(in);
             readImage(new ByteArrayInputStream(bytes));
             return bytes;
         } catch (IOException ex) {

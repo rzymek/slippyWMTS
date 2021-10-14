@@ -14,7 +14,20 @@ public class ImageUtils {
                 int red = c.getRed();
                 int green = c.getGreen();
                 int blue = c.getBlue();
-                if(red < THRESHOLD || green < THRESHOLD || blue < THRESHOLD) {
+                if (red < THRESHOLD || green < THRESHOLD || blue < THRESHOLD) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    public static boolean isFullyTransparent(BufferedImage img) {
+        for (int x = 0; x < img.getWidth(); x++) {
+            for (int y = 0; y < img.getHeight(); y++) {
+                int rgb = img.getRGB(x, y);
+                int alpha = (rgb >> 24) & 0xff;
+                if (alpha != 0) {
                     return false;
                 }
             }
