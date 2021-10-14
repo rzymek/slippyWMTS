@@ -8,6 +8,8 @@ import java.sql.SQLException;
 public interface Store extends AutoCloseable {
     void save(SlippyTile tile, BufferedImage slippy) throws Exception;
 
+    void save(SlippyTile tile, byte[] bytes) throws Exception;
+
     boolean exists(SlippyTile tile) throws Exception;
 
     void saveEmpty(SlippyTile tile) throws Exception;

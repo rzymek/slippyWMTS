@@ -24,6 +24,12 @@ public class FileStore implements Store {
         ImageIO.write(slippy, EXT, file);
     }
 
+    @Override
+    public void save(SlippyTile slippyTile, byte[] bytes) throws IOException {
+        File file = toFileExt(slippyTile);
+        FileUtils.writeByteArrayToFile(file, bytes);
+    }
+
     private File toFileExt(SlippyTile slippyTile) {
         File file = toFile(slippyTile);
         file.getParentFile().mkdirs();

@@ -42,4 +42,29 @@ public class SlippyTile extends Tile {
         coord.setLat(Math.toDegrees(Math.atan(Math.sinh(n))));
         return coord;
     }
+
+    public class BoundingBox {
+        public double north;
+        public double south;
+        public double east;
+        public double west;
+    }
+    public BoundingBox getBBox() {
+        BoundingBox bb = new BoundingBox();
+        bb.north = tile2lat(y, z);
+        bb.south = tile2lat(y + 1, z);
+        bb.west = tile2lon(x, z);
+        bb.east = tile2lon(x + 1, z);
+        return bb;
+    }
+
+    static double tile2lon(int x, int z) {
+        return x / Math.pow(2.0, z) * 360.0 - 180;
+    }
+
+    static double tile2lat(int y, int z) {
+        double n = Math.PI - (2.0 * Math.PI * y) / Math.pow(2.0, z);
+        return Math.toDegrees(Math.atan(Math.sinh(n)));
+    }
+
 }

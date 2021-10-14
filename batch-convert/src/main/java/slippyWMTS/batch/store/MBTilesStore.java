@@ -41,13 +41,18 @@ public class MBTilesStore implements Store {
 
     @Override
     public void save(SlippyTile slippyTile, BufferedImage slippy) throws Exception {
-        setPositionParams(insert, slippyTile);
         try (ByteArrayOutputStream buf = new ByteArrayOutputStream()) {
             ImageIO.write(slippy, FORMAT_NAME, buf);
-            insert.setBytes(4, buf.toByteArray());
+            save(slippyTile, buf.toByteArray());
         }
+    }
+
+    public void save(SlippyTile slippyTile, byte[] bytes) throws Exception {
+        setPositionParams(insert, slippyTile);
+        insert.setBytes(4, bytes);
         insert.execute();
     }
+
 
     private PreparedStatement setPositionParams(PreparedStatement statement, SlippyTile tile) throws SQLException {
         statement.setInt(1, tile.z);
